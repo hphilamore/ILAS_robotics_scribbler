@@ -69,31 +69,32 @@ int main()
 
     if (s3_resetButtonCount() == 1) {
       // Calibrate IR line sensors for WHITE
-      // Turn on spot   
-      Calibrate("b");
-      
-       
+      // Turn on spot
+      //WhiteCalibrate();   
+      Calibrate("w");    
     }  
     
     
     if (s3_resetButtonCount() == 2) {
       // Calibrate IR line sensors for BLACK
       // Drive 5cm in straight line 
-      
-      BlackCalibrate();      
+      //BlackCalibrate(); 
+      Calibrate("b");     
       
     }     
     
     if (s3_resetButtonCount() == 3) {
       // line following : binary controller
-      LineFollowBinary();    
+      //LineFollowBinary(); 
+      LineFollow("b");    
       
     } 
         
         
      if (s3_resetButtonCount() == 4) {
       // line following : proportional controller
-      LineFollowProp();           
+      //LineFollowProp(); 
+      LineFollow("p");           
           
     }   
    
@@ -217,6 +218,56 @@ void BlackCalibrate(void){
       s3_memoryWrite(3, leftave_black);      // store in non-volatile memory 
       s3_memoryWrite(4, rightave_black);
 }      
+
+
+void LineFollow(char controller){
+      // line following : binary controller
+      
+      int leftave_white = s3_memoryRead(1);                      // stored average IR sensor calibration values
+      int rightave_white = s3_memoryRead(2);
+      int leftave_black = s3_memoryRead(3);
+      int rightave_black = s3_memoryRead(4);
+      
+      int mid_left = (leftave_white - leftave_black) / 2;        // midpoint between black and white
+      int mid_right = (rightave_white - rightave_black) / 2;
+      
+      int v_basic = 30;                                          // basic speed
+      
+      
+      while(1){
+      
+        if (controller=="b"){
+          if(s3_lineSensor(S3_LEFT) > mid_left && s3_lineSensor(S3_RIGHT) < mid_right){       // left=white, right=black --> turn right
+            s3_motorSet(40, -20, 0);
+            pause(200);}
+          
+          else if(s3_lineSensor(S3_RIGHT) > mid_right && s3_lineSensor(S3_LEFT) < mid_left){  // left=black, right=white --> turn left
+            s3_motorSet(-20, 40, 0);
+            pause(200);}
+           
+          else{                              // left = right = white/black --> go straight
+            s3_motorSet(v_basic, v_basic, 0);     
+            pause(200);}
+         }          
+        
+        if (controller=="p"){
+          if(s3_lineSensor(S3_LEFT) > mid_left && s3_lineSensor(S3_RIGHT) < mid_right){          // left=white, right=black --> turn right
+            int r_error = rightave_white - s3_lineSensor(S3_RIGHT);
+            int v_l = v_basic + (100 - v_basic) * r_error / (rightave_white - rightave_black);
+            s3_motorSet(v_l, -v_l/2, 0);
+            pause(200);}
+          else if(s3_lineSensor(S3_RIGHT) > mid_right && s3_lineSensor(S3_LEFT) < mid_left){     // left=black, right=white --> turn left
+            int l_error = leftave_white - s3_lineSensor(S3_LEFT);
+            int v_r = v_basic + (100 - v_basic) * l_error / (leftave_white - leftave_black);
+            s3_motorSet(-v_r/2, v_r, 0);
+            pause(200);}
+          else{                                     // left = right = white/black --> go straight
+            s3_motorSet(v_basic, v_basic, 0);
+            pause(200);}
+         }         
+           
+      }      
+}
 
 
 void LineFollowBinary(void){
