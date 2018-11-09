@@ -68,27 +68,33 @@ int main()
     
 
     if (s3_resetButtonCount() == 1) {
-      // turn on spot to calibrate white
-      encoder_update();
-      float left_count_start = encoder_vals[0];
-      int left = 0;
+      // Calibrate IR line sensors for WHITE
+      // Turn on spot  
+      
+      encoder_update();                          // get new encoder values
+      float left_count_start = encoder_vals[0];  // left encoder count at start 
+      
+      int left = 0;                              // variables for IR sensor values      
       int right = 0;
       int count = 0;
-      encoder_update();
-      int bot_diameter = 145;
+      
+      int bot_diameter = 145;                    // distance between two drive wheels
+      
+      
       while(fabs(encoder_vals[0] - left_count_start) < bot_diameter * 3.142){
-      s3_motorSet(50, -50, 0);
-      left += s3_lineSensor(S3_LEFT);
-      right += s3_lineSensor(S3_RIGHT);
-      count += 1;
-      encoder_update(); 
+        
+        s3_motorSet(50, -50, 0);                 // turn on spot
+        left += s3_lineSensor(S3_LEFT);          // cumulative sum left IR sensor
+        right += s3_lineSensor(S3_RIGHT);        // cumulative sum right IR sensor
+        count += 1;                              // cumulative sum while loops
+        encoder_update();                        // get new encoder values
       }
-      s3_motorSet(0, 0, 0); 
+      s3_motorSet(0, 0, 0);               // stop moving         
       
-      int leftave_white = left/count;
-      int rightave_white = right/count;
+      int leftave_white = left/count;     // average left IR sensor
+      int rightave_white = right/count;   // average right IR sensor
       
-      s3_memoryWrite(1, leftave_white);
+      s3_memoryWrite(1, leftave_white);   // store in non-volatile memory 
       s3_memoryWrite(2, rightave_white);
 
       
