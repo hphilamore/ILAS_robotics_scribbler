@@ -245,7 +245,7 @@ void LineFollow(char controller){
             s3_motorSet(-20, 40, 0);
             pause(200);}
            
-          else{                              // left = right = white/black --> go straight
+          else{                                     // left = right = white/black --> go straight
             s3_motorSet(v_basic, v_basic, 0);     
             pause(200);}
          }          
