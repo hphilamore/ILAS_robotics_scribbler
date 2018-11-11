@@ -113,16 +113,49 @@ int main()
       while(1){ 
         //IR_ObstacleAvoid(70);
         
-        //DigitalLightFollow(70);
-        SimpleLightFollow(70); 
+        DigitalLightFollow(70);
+        //SimpleLightFollow(70);
+        
+        pause(200);
+        IR_ObstacleAvoid(70);
+        StallAvoid(70);
+        
+        
       }                    
+    }  
+    
+    if (s3_resetButtonCount() == 7) {
+      // line following : proportional controller
+      while(1){
+        s3_motorSet(70, 70, 0);
+        StallAvoid(70);
+      }      
+                    
     }         
 
 }
-/*
-void stall_maneuvre(void){
-  // interrupt turn-on-spot if light detected 
-*/
+
+
+void StallAvoid(int basic_speed){
+  // escape maneuver if stall detected
+  //while (1) {
+    //pause(200);
+    if (!s3_tailWheelMoving()) {
+      print("Stalled \n");
+      s3_motorSet(-basic_speed, -basic_speed, 1500);   // move backwards
+      s3_simpleSpin(90, basic_speed, 0);               // quarter clockwise turn
+    }
+    else
+    {
+      print("Not Stalled \n");
+    }
+    //s3_motorSet(-basic_speed, -basic_speed, 1500);   // move backwards
+    //s3_simpleSpin(90, basic_speed, 0);               // quarter clockwise turn
+  //}
+}      
+    
+ 
+
 
 
 
@@ -149,7 +182,7 @@ void IR_ObstacleAvoid(int basic_speed){
       s3_motorSet(70, -10, 0);  // turn left
     } 
     else{                       // obstacle directly in front
-      s3_simpleSpin(60, 50, 0); // large clockwise turn
+      s3_simpleSpin(60, 50, 0); // clockwise turn
     } 
   }
   else{
@@ -196,79 +229,47 @@ void DigitalLightFollow(int basic_speed){
   // Robot follows the brightest light in its path
   // If brightest not detected, turns on spot
   
-  int bot_diameter = 145;                    // distance between two drive wheels 
-  /*
-  if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) | 
+  int bot_diameter = 145;                      // distance between two drive wheels 
+  
+  if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |  // brightest detected
       s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
       s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
         
     SimpleLightFollow(basic_speed);
   } 
-  */   
+     
   
-  /*
-  if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){        // light to left --> turn left
-    s3_motorSet(-70, 70, 0);}
-  
-  else if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){  // light to right --> turn right
-    s3_motorSet(70, -70, 0);}
-  
-  else if(s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){ // light at centre --> go straight
-    s3_motorSet(70, 70, 0);}
-    */
-  
-  /*
-  else{   // no light         
-    encoder_update();                                   // get new encoder values
-    float left_count_start = encoder_vals[0];           // left encoder count at start 
-    //float angle_rad = 0.52;                             // angle to turn each timestep
-    //float angle_mm = bot_diameter * angle_rad / 3.142;  // convert to mm
-    
-    
-    //while(fabs(encoder_vals[0] - left_count_start) < angle_mm){ // turn-on-spot 
-    while(fabs(encoder_vals[0] - left_count_start) < bot_diameter * 3.142){           
-      s3_motorSet(-basic_speed, basic_speed, 0);
-      encoder_update();
-   
-      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |       // stop if light detected 
-          s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
-          s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
-        break;
-      
-      } // if        
-    } // while loop
-    
-    
-    //while(1){                                        
-    s3_motorSet(basic_speed, basic_speed, 0);        // drive in straight line
-  
-      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |      // stop if light detected 
-          s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
-          s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
-        break;
-      } // if        
-    } // while loop
-    
-      
-  } // else 
-  */
-
-  //else{
+  else{   // brightest not detected
   encoder_update();                          // get new encoder values
   float left_count_start = encoder_vals[0];  // left encoder count at start 
   
-  // turn until full circle reached
-  while(fabs(encoder_vals[0] - left_count_start) < bot_diameter * 3.142){     
+  // turn on spot until full circle reache  d
+    while(fabs(encoder_vals[0] - left_count_start) < bot_diameter * 3.142){     
+      
+      s3_motorSet(basic_speed, -basic_speed, 0);    
+      
+      encoder_update();                             // get new encoder values
+      
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |   // stop if light detected 
+          s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
+          s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+            break;}      
+    }
     
-    s3_motorSet(basic_speed, -basic_speed, 0);                 // turn on spot
-    
-    encoder_update();                        // get new encoder values
-  }
-  while(1){
-    s3_motorSet(basic_speed, basic_speed, 0);                  // stop moving       
-  }   
-
-             
+    // go straight
+    while(1){
+      s3_motorSet(basic_speed, basic_speed, 0);
+      
+      IR_ObstacleAvoid(basic_speed); 
+      StallAvoid(70);
+                        
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |   // stop if light detected    
+          s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
+          s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+            break;}     
+    } 
+  } //else 
+                
 } //function
 
 
