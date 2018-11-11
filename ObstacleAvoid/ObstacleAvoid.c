@@ -203,17 +203,19 @@ void SimpleLightFollow(int basic_speed){
   int high_speed = basic_speed / 0.7;
   
   if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){
+    print("follow left light \n");
     while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
       s3_motorSet(low_speed, high_speed, 0);  
-      if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){ 
+      if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | !s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){ 
         break;}                
     } //while
    } // if      
   
   else if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){
+    print("follow right light \n");
     while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
       s3_motorSet(high_speed, low_speed, 0);
-      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){ 
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) | !s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){ 
         break;}
     } //while
   } // if
