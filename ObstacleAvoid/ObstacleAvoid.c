@@ -111,28 +111,28 @@ int main()
       // line following : proportional controller
       //LineFollowProp();
       while(1){ 
-        IR_ObstacleAvoid(70);
-        //AnalogLightFollow(); 
+        //IR_ObstacleAvoid(70);
+        
+        DigitalLightFollow(70); 
       }                    
     }         
 
 }
-
+/*
+void stall_maneuvre(void){
+  // interrupt turn-on-spot if light detected 
+*/
 
 
 
 void IR_ObstacleAvoid(int basic_speed){
   // Performs escape maneuver if IR sensors detect obstacle
+  // Otherwise drives straight at input basic speed
   
   int left = s3_simpleObstacle(S3_IS, S3_LEFT);
   int right = s3_simpleObstacle(S3_IS, S3_RIGHT);
   int centre = s3_simpleObstacle(S3_IS, S3_CENTER);
   int detected = s3_simpleObstacle(S3_IS, S3_DETECTED);
- 
-
-  //int left = s3_readObstacle(SCRIBBLER_LEFT);
-  //int right = s3_readObstacle(SCRIBBLER_RIGHT);
-  
   
   print("%d\t", detected);
   print("\t");
@@ -141,26 +141,19 @@ void IR_ObstacleAvoid(int basic_speed){
   print("%d\n", right);
   
   if(detected){
-    if(left && !right){
-      //print("left not right")
-      s3_motorSet(-10, 70, 0);
+    if(left && !right){         // obstacle to left
+      s3_motorSet(-10, 70, 0);  // turn right
     }
-    else if(right && !left){
-      s3_motorSet(70, -10, 0);
+    else if(right && !left){    // obstacle to right
+      s3_motorSet(70, -10, 0);  // turn left
     } 
-    else{
-      //s3_motorSet(100, -10, 200);
-      s3_simpleSpin(60, 50, 0);
+    else{                       // obstacle directly in front
+      s3_simpleSpin(60, 50, 0); // large clockwise turn
     } 
   }
   else{
     s3_motorSet(basic_speed, basic_speed, 0);
-    // test
-  }             
-            
-          
-      
-  
+  }                
 }
 
   
@@ -168,7 +161,7 @@ void IR_ObstacleAvoid(int basic_speed){
 
 
 
-void SimpleLightFollow(void){
+void SimpleLightFollow(int basic_speed){
   // Robot follows the brightest light in its path
   // If brightest not detected, goes straight
   if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){
@@ -184,13 +177,20 @@ void SimpleLightFollow(void){
 
 
 
-void DigitalLightFollow(void){
+void DigitalLightFollow(int basic_speed){
   // Robot follows the brightest light in its path
   // If brightest not detected, turns on spot
   
   int bot_diameter = 145;                    // distance between two drive wheels 
   
-
+  if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) | 
+      s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
+      s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+        
+    SimpleLightFollow(basic_speed);
+  }    
+  
+  /*
   if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){        // light to left --> turn left
     s3_motorSet(-70, 70, 0);}
   
@@ -199,18 +199,40 @@ void DigitalLightFollow(void){
   
   else if(s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){ // light at centre --> go straight
     s3_motorSet(70, 70, 0);}
+    */
   
   
   else{   // no light         
     encoder_update();                                   // get new encoder values
     float left_count_start = encoder_vals[0];           // left encoder count at start 
-    float angle_rad = 0.52;                             // angle to turn on spot
-    float angle_mm = bot_diameter * angle_rad / 3.142;  // angle arc in mm
-    while(fabs(encoder_vals[0] - left_count_start) < angle_mm){          
-      s3_motorSet(-50, 50, 0);
-      encoder_update();}      
-  }              
-}
+    float angle_rad = 0.52;                             // angle to turn each timestep
+    float angle_mm = bot_diameter * angle_rad / 3.142;  // convert to mm
+    
+    
+    while(fabs(encoder_vals[0] - left_count_start) < angle_mm){ // turn-on-spot          
+      s3_motorSet(-basic_speed, basic_speed, 0);
+      encoder_update();
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |       // stop if light detected 
+          s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
+          s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+        break;
+      } // if        
+    } // while loop
+    
+    
+    //while(1){                                        
+    s3_motorSet(basic_speed, basic_speed, 0);        // drive in straight line
+    /*
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |      // stop if light detected 
+          s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
+          s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+        break;
+      } // if        
+    } // while loop
+    */
+      
+  } // else             
+} //function
 
 
 void AnalogLightFollow(void){
@@ -234,7 +256,7 @@ void AnalogLightFollow(void){
      
   
   
-  
+ 
 
  
   

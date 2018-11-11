@@ -1,4 +1,5 @@
 ObstacleAvoid.c
+my_file.c -> ../../../../../SimpleIDE/My Projects/my_file.c
 >compiler=C
 >memtype=cmm main ram compact
 >optimize=-Os
