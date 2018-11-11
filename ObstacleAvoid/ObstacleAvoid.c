@@ -110,11 +110,12 @@ int main()
     if (s3_resetButtonCount() == 6) {
       // line following : proportional controller
       //LineFollowProp();
-      //while(1){ 
+      while(1){ 
         //IR_ObstacleAvoid(70);
         
-        DigitalLightFollow(70); 
-      //}                    
+        //DigitalLightFollow(70);
+        SimpleLightFollow(70); 
+      }                    
     }         
 
 }
@@ -164,15 +165,23 @@ void IR_ObstacleAvoid(int basic_speed){
 void SimpleLightFollow(int basic_speed){
   // Robot follows the brightest light in its path
   // If brightest not detected, goes straight
+  
+  int low_speed = basic_speed * 0.7;
+  int high_speed = basic_speed / 0.7;
+  
   if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){
     while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
-      s3_motorSet(10, basic_speed, 0);      
+      s3_motorSet(low_speed, high_speed, 0);  
+      if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){ 
+        break;}                
     } //while
    } // if      
   
   else if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){
     while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
-      s3_motorSet(basic_speed, 10, 0);
+      s3_motorSet(high_speed, low_speed, 0);
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){ 
+        break;}
     } //while
   } // if
   
