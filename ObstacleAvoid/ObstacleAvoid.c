@@ -134,7 +134,8 @@ int main()
         StallAvoid(70);
       }  
       */
-      DistanceSense();   
+      //DistanceSense(); 
+      PingTest();  
                     
     } 
     
@@ -586,15 +587,80 @@ void LineFollowProp(void){
       }
 }
 
-
+void PingTest(void){
+  // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
+  // setup pins
+  int trigger_pin = 0;
+  int echo_pin = 1;
+  set_direction(trigger_pin, 0); // output
+  set_direction(echo_pin, 1);    // input  
+  
+  // send a pulse
+  int time_old = CNT/st_usTicks;
+  int time_new = CNT/st_usTicks;
+  int time_delta = 10;    
+  while(time_new - time_old < time_delta){    
+     high(trigger_pin);       
+     time_new = CNT/st_usTicks;}
+  low(trigger_pin); 
+         
+  for(int i = 0; i < 100; i++){
+    print("%d\n", input(echo_pin));
+  }  
+}
+ 
 
 void DistanceSense(void){
-  // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor  
+  // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
+  // setup pins
+  int trigger_pin = 0;
+  int echo_pin = 1;
+  set_direction(trigger_pin, 0); // output
+  set_direction(echo_pin, 1);    // input
+  
+  
+  // send a pulse
+  set_pause_dt(CLKFREQ/1000000); // set pause unit to us
+  high(trigger_pin); 
+  pause(10);
+  low(trigger_pin);
+  
+  int echo, previousEcho, lowHigh, highLow;
+  long startTime, stopTime, difference;
+  float rangeCm;
+  
+  lowHigh = highLow = echo = previousEcho = 0;
+  
+  while(0 == lowHigh || highLow == 0) {
+    previousEcho = echo;
+    echo = input(echo_pin);
+    
+    if(0 == lowHigh && 0 == previousEcho && 1 == echo) {
+      lowHigh = 1;
+      startTime = CNT/st_usTicks;
+    }
+    
+    if(1 == lowHigh && 1 == previousEcho && 0 == echo) {
+      highLow = 1;
+      stopTime = CNT/st_usTicks;
+    }
+  }
+  difference = stopTime - startTime;
+  rangeCm = difference / 58;
+  print("Start: %ld, stop: %ld, difference: %ld, range: %.2f cm\n", startTime, stopTime, difference, rangeCm);
+ 
+} 
+  
+
+
+
+void OnOffPulse(void){
+  // Sends an ON OFF pulse 
   
   int trigger_pin = 0;
   int time_old = CNT/st_usTicks;
   int time_new = CNT/st_usTicks;
-  unsigned int time_delta = 1000000;
+  unsigned int time_delta = 10;
   
   while (1){  
   
