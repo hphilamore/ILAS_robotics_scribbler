@@ -134,8 +134,10 @@ int main()
         StallAvoid(70);
       }  
       */
-      //DistanceSense(); 
-      PingTest();  
+      while(1){
+        DistanceSense(); 
+      }      
+      //PingTest();  
                     
     } 
     
@@ -616,17 +618,21 @@ void DistanceSense(void){
   int trigger_pin = 0;
   int echo_pin = 1;
   set_direction(trigger_pin, 0); // output
-  set_direction(echo_pin, 1);    // input
+  set_direction(echo_pin, 1);    // input  
   
   
   // send a pulse
-  set_pause_dt(CLKFREQ/1000000); // set pause unit to us
-  high(trigger_pin); 
-  pause(10);
+  int time_old = CNT/st_usTicks;
+  int time_new = CNT/st_usTicks;
+  int time_delta = 10;    
+  while(time_new - time_old < time_delta){    
+     high(trigger_pin);       
+     time_new = CNT/st_usTicks;}
   low(trigger_pin);
   
+  
   int echo, previousEcho, lowHigh, highLow;
-  long startTime, stopTime, difference;
+  int startTime, stopTime, difference;
   float rangeCm;
   
   lowHigh = highLow = echo = previousEcho = 0;
@@ -647,7 +653,8 @@ void DistanceSense(void){
   }
   difference = stopTime - startTime;
   rangeCm = difference / 58;
-  print("Start: %ld, stop: %ld, difference: %ld, range: %.2f cm\n", startTime, stopTime, difference, rangeCm);
+  //print("Start: %d, stop: %d, difference: %d, range: %.2f cm\n", startTime, stopTime, difference, rangeCm);
+  print("differece: %d, Distance: %.2f cm\n", difference, rangeCm);
  
 } 
   
