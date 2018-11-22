@@ -8,6 +8,8 @@ static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hol
 
 void encoder_update(void);
 
+float DistanceSense(void); 
+
 void encoder_update(void) {   
     // Value : a 32 bit integer containing registers describig the behavious of drive and idler wheel encoders
     // Updates an array of 9 values
@@ -135,7 +137,8 @@ int main()
       }  
       */
       while(1){
-        DistanceSense(); 
+        float d = DistanceSense(); 
+        print("%.2f\n", d);
       }      
       //PingTest();  
                     
@@ -612,13 +615,16 @@ void PingTest(void){
 }
  
 
-void DistanceSense(void){
+float DistanceSense(void){
   // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
+  
   // setup pins
   int trigger_pin = 0;
   int echo_pin = 1;
   set_direction(trigger_pin, 0); // output
   set_direction(echo_pin, 1);    // input  
+  
+  // variables for measuring echo pulse
   
   
   // send a pulse
@@ -635,6 +641,8 @@ void DistanceSense(void){
   int startTime, stopTime, difference;
   float rangeCm;
   
+  
+  // check for received pulse
   lowHigh = highLow = echo = previousEcho = 0;
   
   while(0 == lowHigh || highLow == 0) {
@@ -653,8 +661,9 @@ void DistanceSense(void){
   }
   difference = stopTime - startTime;
   rangeCm = difference / 58;
+  return rangeCm;
   //print("Start: %d, stop: %d, difference: %d, range: %.2f cm\n", startTime, stopTime, difference, rangeCm);
-  print("differece: %d, Distance: %.2f cm\n", difference, rangeCm);
+  //print("differece: %d, Distance: %.2f cm\n", difference, rangeCm);
  
 } 
   
