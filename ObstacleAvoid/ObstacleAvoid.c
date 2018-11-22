@@ -127,11 +127,14 @@ int main()
     }  
     
     if (s3_resetButtonCount() == 7) {
+      /*
       // line following : proportional controller
       while(1){
         s3_motorSet(70, 70, 0);
         StallAvoid(70);
-      }      
+      }  
+      */
+      DistanceSense();   
                     
     } 
     
@@ -584,24 +587,40 @@ void LineFollowProp(void){
 }
 
 
-/*
+
 void DistanceSense(void){
   // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor  
   
   int trigger_pin = 0;
-  int time_us_o = CNT/st_usTicks;
-  int time_us_n = CNT/st_usTicks;
+  int time_old = CNT/st_usTicks;
+  int time_new = CNT/st_usTicks;
+  unsigned int time_delta = 1000000;
   
-  while(
+  while (1){  
   
-  high(trigger_pin);
+    while(time_new - time_old < time_delta){
+    
+      high(trigger_pin); 
+      
+      time_new = CNT/st_usTicks;
+      
+    }
+    
+    time_old = time_new;    
+      
+    while(time_new - time_old < time_delta){
+    
+      low(trigger_pin); 
+      
+      time_new = CNT/st_usTicks;
+      
+    }
+    
+    time_old = time_new;
+  }  
   
-  unsigned int time_delta = time_new - time_old;
-  
-  //unsigned int time_us = CNT/st_usTicks;
-  
-  //while(
-*/
+}  
+
   
   
   
