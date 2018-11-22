@@ -1,6 +1,8 @@
 #include "simpletools.h" 
 #include "s3.h" 
 #include "scribbler.h"
+#include "servo.h"
+#include "ping.h"
 
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
 
@@ -65,7 +67,7 @@ int main()
 {
   s3_setup();
   
-    
+
 
     if (s3_resetButtonCount() == 1) {
       // Calibrate IR line sensors for WHITE
@@ -131,10 +133,57 @@ int main()
         StallAvoid(70);
       }      
                     
-    }         
+    } 
+    
+    if (s3_resetButtonCount() == 8) {
+      // line following : proportional controller
+      
+      unsigned int time_old = CNT/st_usTicks;
+      
+      while(1){
+        /*
+              servo_angle(0, 180 * 10);
+              pause(500);
+              servo_angle(0, 90 * 10); 
+              pause(500);
+              */
+            int count = CNT;
+            //unsigned int int_time = CNT/CLKFREQ;
+            //unsigned int int_time = CNT/st_iodt;
+            unsigned int time_new = CNT/st_usTicks;
+            //print("%d\t", int_time);
+            //print("%d\n", time);
+            //print("%d\t", CNT/1000000);
+            //print("%d\t", CLKFREQ/1000000);
+            unsigned int time_delta = time_new - time_old;
+            print("%d\t", CNT/CLKFREQ);
+            print("%d\t", time_old);
+            print("%d\t", time_new);
+            print("%d\n", time_delta);          
+            }
+              
+       
+      /*
+      servo_angle(0, 180 * 10);
+      pause(500);
+      servo_angle(0, 90 * 10); 
+      pause(500); 
+      */   
+                    
+    }        
 
 }
 
+void AnalogLight(void){
+  // Robot follows the brightest light in its path
+  int left = s3_lightSensor(SCRIBBLER_LEFT);
+  int right = s3_lightSensor(SCRIBBLER_RIGHT);
+  int centre = s3_lightSensor(SCRIBBLER_CENTER);
+  print("%d\t", left);
+  print("%d\t", centre);
+  print("%d\n", right);
+ 
+}
 
 void StallAvoid(int basic_speed){
   // escape maneuver if stall detected
@@ -203,7 +252,6 @@ void SimpleLightFollow(int basic_speed){
   int high_speed = basic_speed / 0.7;
   
   if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){
-    print("follow left light \n");
     while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
       s3_motorSet(low_speed, high_speed, 0);  
       if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | !s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){ 
@@ -212,7 +260,6 @@ void SimpleLightFollow(int basic_speed){
    } // if      
   
   else if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){
-    print("follow right light \n");
     while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
       s3_motorSet(high_speed, low_speed, 0);
       if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) | !s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){ 
@@ -263,7 +310,7 @@ void DigitalLightFollow(int basic_speed){
       s3_motorSet(basic_speed, basic_speed, 0);
       
       IR_ObstacleAvoid(basic_speed); 
-      StallAvoid(70);
+      StallAvoid(basic_speed);
                         
       if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) |   // stop if light detected    
           s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) | 
@@ -301,57 +348,57 @@ void AnalogLightFollow(void){
  
   
 
-void Calibrate(char colour){
-  // Calibrate IR line sensors 
-  // colour = "white" or "black"   
-  
-  int left = 0;                              // variables for IR sensor values      
-  int right = 0;
-  int count = 0;
-  
-  int bot_diameter = 145;                    // distance between two drive wheels 
-  
-  int encoder_limit;                         // encoder count at which motion stops
-  int vl;                                    // left velocity
-  int vr;                                    // right velocity
-  
-  
-  //if(colour == "Lend money!"){
-  if(colour == "w"){
-    encoder_limit = bot_diameter * 3.142;    
-    vl = 50;                             
-    vr = -50;                            
-  }   
-  
-  if(colour == "b"){
-    encoder_limit = 50;                  
-    vl = 50;                             
-    vr = 50;                             
-  } 
-     
-  
-  encoder_update();                          // get new encoder values
-  float left_count_start = encoder_vals[0];  // left encoder count at start 
-  
-  // turn until full circle reached
-  while(fabs(encoder_vals[0] - left_count_start) < encoder_limit){     
+  void Calibrate(char colour){
+    // Calibrate IR line sensors 
+    // colour = "w" (white) or "b" (black) 
     
-    s3_motorSet(vl, vr, 0);                 // turn on spot
-    left += s3_lineSensor(S3_LEFT);          // cumulative sum left IR sensor
-    right += s3_lineSensor(S3_RIGHT);        // cumulative sum right IR sensor
-    count += 1;                              // cumulative sum while loops
-    encoder_update();                        // get new encoder values
-  }
-  s3_motorSet(0, 0, 0);                  // stop moving         
-  
-  int leftave_white = left/count;        // average left IR sensor
-  int rightave_white = right/count;      // average right IR sensor
-  
-  s3_memoryWrite(1, leftave_white);      // store in non-volatile memory 
-  s3_memoryWrite(2, rightave_white);
-  
-  
-}  
+    int left = 0;                              // variables for IR sensor values      
+    int right = 0;
+    int count = 0;
+    
+    int bot_diameter = 145;                    // distance between two drive wheels 
+    
+    int encoder_limit;                         // encoder count at which motion stops
+    int vl;                                    // left velocity
+    int vr;                                    // right velocity
+    
+    
+    //if(colour == "Lend money!"){
+    if(colour == "w"){
+      encoder_limit = bot_diameter * 3.142;    
+      vl = 50;                             
+      vr = -50;                            
+    }   
+    
+    if(colour == "b"){
+      encoder_limit = 50;                  
+      vl = 50;                             
+      vr = 50;                             
+    } 
+       
+    
+    encoder_update();                          // get new encoder values
+    float left_count_start = encoder_vals[0];  // left encoder count at start 
+    
+    // turn until full circle reached
+    while(fabs(encoder_vals[0] - left_count_start) < encoder_limit){     
+      
+      s3_motorSet(vl, vr, 0);                 // turn on spot
+      left += s3_lineSensor(S3_LEFT);          // cumulative sum left IR sensor
+      right += s3_lineSensor(S3_RIGHT);        // cumulative sum right IR sensor
+      count += 1;                              // cumulative sum while loops
+      encoder_update();                        // get new encoder values
+    }
+    s3_motorSet(0, 0, 0);                  // stop moving         
+    
+    int leftave_white = left/count;        // average left IR sensor
+    int rightave_white = right/count;      // average right IR sensor
+    
+    s3_memoryWrite(1, leftave_white);      // store in non-volatile memory 
+    s3_memoryWrite(2, rightave_white);
+    
+    
+  }  
 
 
 
@@ -420,7 +467,8 @@ void BlackCalibrate(void){
 
 
 void LineFollow(char controller){
-      // line following : binary controller
+      // line following 
+      // conroller = "b" (binary) or "p" (proportional) 
       
       int leftave_white = s3_memoryRead(1);                      // stored average IR sensor calibration values
       int rightave_white = s3_memoryRead(2);
@@ -534,3 +582,29 @@ void LineFollowProp(void){
       
       }
 }
+
+
+/*
+void DistanceSense(void){
+  // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor  
+  
+  int trigger_pin = 0;
+  int time_us_o = CNT/st_usTicks;
+  int time_us_n = CNT/st_usTicks;
+  
+  while(
+  
+  high(trigger_pin);
+  
+  unsigned int time_delta = time_new - time_old;
+  
+  //unsigned int time_us = CNT/st_usTicks;
+  
+  //while(
+*/
+  
+  
+  
+  
+  
+  
