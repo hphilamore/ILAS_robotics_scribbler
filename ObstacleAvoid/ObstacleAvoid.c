@@ -4,70 +4,25 @@
 #include "servo.h"
 #include "ping.h"
 
-static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
+int PID_time_old; 
+float PID_err_old;
+float P, I, D;
+float Feedback, Setpoint;
+float kp, ki, kd;
 
+float DistanceSense(int trig_pin, int echo_pin);
+int calculatePID(float Setpoint, float Feedback);
+
+static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
 void encoder_update(void);
 
-float DistanceSense(void); 
-
-void encoder_update(void) {   
-    // Value : a 32 bit integer containing registers describig the behavious of drive and idler wheel encoders
-    // Updates an array of 9 values
-    // 0 Left wheel distance count (mm)
-    // 1 Right wheel distance count (mm)
-    // 2 Time in 1/10 second since the last idler encoder edge
-    // 3 Idler wheel velocity
-    // 4 Non-zero if one or more motors are turning.  
-    // 5-8 Variables used in encoder calcs     
-
-    
-    int32_t value = scribbler_motion();
-    
-    int32_t e0 = (value >> 24);           
-    encoder_vals[7] = e0 * 0.25;  //new 1           
-    
-    int32_t e1 = (value >> 16) & 0xff;           
-    encoder_vals[8] = e1 * 0.25;  //new 2  
-      
-      //if (new > old){
-      if (encoder_vals[7] >= encoder_vals[5]){
-        encoder_vals[0] += encoder_vals[7] - encoder_vals[5];
-      }
-      else {  
-        encoder_vals[0] += encoder_vals[7]; 
-      }    
-      
-      if (encoder_vals[8] >= encoder_vals[6]){
-        encoder_vals[1] += encoder_vals[8]-encoder_vals[6];
-      }
-      else {  
-        encoder_vals[1] += encoder_vals[8]; 
-      }             
+   
         
-    //old = new;
-    encoder_vals[5] = encoder_vals[7];  // old1 = new1
-    encoder_vals[6] = encoder_vals[8];  // old2 = new2
-    
-    int32_t e2 = (value >> 8)  & 0xff;           
-    encoder_vals[2] = e2;
-    
-    int32_t e3 = value & 0xfc;           
-    encoder_vals[3] = e3;
-    
-    int32_t e4 = value & 0x3;           
-    encoder_vals[4] = e4;               
-
-}
- 
-
-
-
-
-                
 
 int main()                                    
 {
   s3_setup();
+  PID_time_old = CNT/st_usTicks;
   
 
 
@@ -75,7 +30,9 @@ int main()
       // Calibrate IR line sensors for WHITE
       // Turn on spot
       //WhiteCalibrate();   
-      Calibrate("w");    
+      //Calibrate("w"); 
+      while(1){   
+           TurnToLight(70);}      
     }  
     
     
@@ -83,7 +40,15 @@ int main()
       // Calibrate IR line sensors for BLACK
       // Drive 5cm in straight line 
       //BlackCalibrate(); 
-      Calibrate("b");     
+      //Calibrate("b");    
+      float d = DistanceSense(0, 1); 
+      print("%.2f\n", d);
+      s3_motorSet(50, 50, 0);
+      pause(1000);
+      while(1){
+        //WallFollow(d, 70, 0, 1);
+        WallFollow(d, 0, 1);
+      }  
       
     }     
     
@@ -137,7 +102,7 @@ int main()
       }  
       */
       while(1){
-        float d = DistanceSense(); 
+        float d = DistanceSense(0, 1); 
         print("%.2f\n", d);
       }      
       //PingTest();  
@@ -182,6 +147,37 @@ int main()
     }        
 
 }
+
+int calculatePID(float Setpoint, float Feedback){
+  // Returns a value to chnage motor speed by to correct error between feedbacl and set point
+  
+   /*How long since we last calculated*/
+   int PID_time_new = CNT/st_usTicks;
+   int timeChange = (PID_time_new - PID_time_old);
+  
+   // Find error variables
+   float err = Setpoint - Feedback;
+   P =   err; 
+   I += (err * timeChange);
+   D =  (err - PID_err_old) / timeChange;
+  
+   /*Remember some variables for next time*/
+   PID_err_old = err;
+   PID_time_old = PID_time_new;
+
+   /*Compute PID Output*/
+   return (int)(kp * P + ki * I + kd * D);
+   
+}
+
+void motorPIDcontrol(int PIDvalue, int bias){
+  // sets the motor speed based on a PID control variable and bias 
+  int leftMotorSpeed = bias - PIDvalue;
+  int rightMotorSpeed = bias + PIDvalue;
+  s3_motorSet( leftMotorSpeed , rightMotorSpeed , 0);
+}
+
+
 
 void AnalogLight(void){
   // Robot follows the brightest light in its path
@@ -592,6 +588,79 @@ void LineFollowProp(void){
       }
 }
 
+/*
+void WallFollow(float set_point, 
+                int basic_speed, 
+                int trig_pin, 
+                int echo_pin){
+  // Follows a wall by maintaining a distance defined by setpoint (cm)
+  // 
+  float d = DistanceSense(trig_pin, echo_pin); 
+  print("set point %d\t", basic_speed); 
+  print("%.2f\n", d);               
+      
+
+  if(d > set_point){       
+    //s3_motorSet(basic_speed - 20, basic_speed + 20, 0);
+    s3_motorSet(-basic_speed, basic_speed, 0);
+    s3_setLED(S3_LEFT, S3_COLOR_FF0000);
+    s3_setLED(S3_CENTER, S3_COLOR_FF0000);
+    s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    pause(200);
+    s3_motorSet(basic_speed, basic_speed, 0);
+    pause(500);}
+     
+  else{                                     
+    //s3_motorSet(basic_speed + 20, basic_speed - 20, 0);
+    s3_motorSet(basic_speed, -basic_speed, 0);
+    s3_setLED(S3_LEFT, S3_COLOR_00FF00 );
+    s3_setLED(S3_CENTER, S3_COLOR_00FF00 );
+    s3_setLED(S3_RIGHT, S3_COLOR_00FF00 );    
+    pause(200);
+    s3_motorSet(basic_speed, basic_speed, 0);
+    pause(500);}                   
+}
+*/
+
+void WallFollow(float set_point, 
+                //int basic_speed, 
+                int trig_pin, 
+                int echo_pin){
+  // Follows a wall by maintaining a distance defined by setpoint (cm)
+  // Wall on Right side of robot
+  float d = DistanceSense(trig_pin, echo_pin);  
+  print("set point = %.2f\n", d);  
+  int high = 70;
+  int low = 40;
+  int dt = 100; //200;             
+      
+
+  if(d > set_point){       
+    //s3_motorSet(basic_speed - 20, basic_speed + 20, 0);
+    //s3_motorSet(40, basic_speed, 0);
+    s3_motorSet(high, low, 0);
+    s3_setLED(S3_LEFT, S3_COLOR_FF0000);
+    s3_setLED(S3_CENTER, S3_COLOR_FF0000);
+    s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    pause(dt);
+    //s3_motorSet(basic_speed, basic_speed, 0);
+    //pause(500);
+    }
+     
+  else{                                     
+    //s3_motorSet(basic_speed + 20, basic_speed - 20, 0);
+    //s3_motorSet(basic_speed, 40, 0);
+    s3_motorSet(low, high, 0);
+    s3_setLED(S3_LEFT, S3_COLOR_00FF00 );
+    s3_setLED(S3_CENTER, S3_COLOR_00FF00 );
+    s3_setLED(S3_RIGHT, S3_COLOR_00FF00 );    
+    pause(dt);
+    //s3_motorSet(basic_speed, basic_speed, 0);
+    //pause(500);
+    }                   
+}
+
+
 void PingTest(void){
   // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
   // setup pins
@@ -613,8 +682,62 @@ void PingTest(void){
     print("%d\n", input(echo_pin));
   }  
 }
- 
 
+
+
+float DistanceSense(int trig_pin, int echo_pin){
+  // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
+  
+  // setup pins
+  set_direction(trig_pin, 0); // output
+  set_direction(echo_pin, 1);    // input  
+  
+  // variables for measuring echo pulse
+  
+  
+  // send a pulse
+  int time_old = CNT/st_usTicks;
+  int time_new = CNT/st_usTicks;
+  int time_delta = 10;    
+  while(time_new - time_old < time_delta){    
+     high(trig_pin);       
+     time_new = CNT/st_usTicks;}
+  low(trig_pin);
+  
+  
+  int echo, previousEcho, lowHigh, highLow;
+  int startTime, stopTime, difference;
+  float rangeCm;
+  
+  
+  // check for received pulse
+  lowHigh = highLow = echo = previousEcho = 0;
+  
+  while(0 == lowHigh || highLow == 0) {
+    previousEcho = echo;
+    echo = input(echo_pin);
+    
+    if(0 == lowHigh && 0 == previousEcho && 1 == echo) {
+      lowHigh = 1;
+      startTime = CNT/st_usTicks;
+    }
+    
+    if(1 == lowHigh && 1 == previousEcho && 0 == echo) {
+      highLow = 1;
+      stopTime = CNT/st_usTicks;
+    }
+  }
+  difference = stopTime - startTime;
+  rangeCm = difference / 58;
+  return rangeCm;
+  //print("Start: %d, stop: %d, difference: %d, range: %.2f cm\n", startTime, stopTime, difference, rangeCm);
+  //print("differece: %d, Distance: %.2f cm\n", difference, rangeCm);
+ 
+} 
+  
+  
+ 
+/*
 float DistanceSense(void){
   // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
   
@@ -666,7 +789,7 @@ float DistanceSense(void){
   //print("differece: %d, Distance: %.2f cm\n", difference, rangeCm);
  
 } 
-  
+ */ 
 
 
 
@@ -702,6 +825,107 @@ void OnOffPulse(void){
   }  
   
 }  
+
+
+void ReachLight(void){
+  // If brightest light detected directly in front of robot,
+  // move in direction of light with speed inversely proportional to brightness.
+	if (s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+    int light = s3_lightSensor(SCRIBBLER_CENTER);
+    int motor_speed = mapInt(light, 0, 255, 100, 0);
+    s3_motorSet(motor_speed, motor_speed, 0);
+    pause(200);}
+}
+
+
+void TurnToLight(int basic_speed){
+  // If brightest light detected but not centered, turn until light is directly ahead.
+  int low_speed = basic_speed * 0.7;
+  int high_speed = basic_speed / 0.7;
+  
+  // Light is left, turn on spot towaards right
+  if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){
+  while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+
+      //s3_motorSet(low_speed, high_speed, 0);  
+      s3_motorSet(-high_speed, high_speed, 0); 
+      if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT) 
+          | !s3_simpleLight(S3_IS, SCRIBBLER_LEFT)){ 
+        break;}   
+    } //while
+   } // if      
+  
+  // Light is right, turn on spot towards right
+  else if (s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){
+  while(!s3_simpleLight(S3_IS, SCRIBBLER_CENTER)){
+
+      //s3_motorSet(high_speed, low_speed, 0);
+      s3_motorSet(high_speed, -high_speed, 0);
+      if (s3_simpleLight(S3_IS, SCRIBBLER_LEFT) | 
+          !s3_simpleLight(S3_IS, SCRIBBLER_RIGHT)){ 
+        break;}
+    } //while
+  } // if
+  
+  else {s3_motorSet(0, 0, 0);} 
+
+}
+
+void encoder_update(void) {   
+    // Value : a 32 bit integer containing registers describig the behavious of drive and idler wheel encoders
+    // Updates an array of 9 values
+    // 0 Left wheel distance count (mm)
+    // 1 Right wheel distance count (mm)
+    // 2 Time in 1/10 second since the last idler encoder edge
+    // 3 Idler wheel velocity
+    // 4 Non-zero if one or more motors are turning.  
+    // 5-8 Variables used in encoder calcs     
+
+    
+    int32_t value = scribbler_motion();
+    
+    int32_t e0 = (value >> 24);           
+    encoder_vals[7] = e0 * 0.25;  //new 1           
+    
+    int32_t e1 = (value >> 16) & 0xff;           
+    encoder_vals[8] = e1 * 0.25;  //new 2  
+      
+      //if (new > old){
+      if (encoder_vals[7] >= encoder_vals[5]){
+        encoder_vals[0] += encoder_vals[7] - encoder_vals[5];
+      }
+      else {  
+        encoder_vals[0] += encoder_vals[7]; 
+      }    
+      
+      if (encoder_vals[8] >= encoder_vals[6]){
+        encoder_vals[1] += encoder_vals[8]-encoder_vals[6];
+      }
+      else {  
+        encoder_vals[1] += encoder_vals[8]; 
+      }             
+        
+    //old = new;
+    encoder_vals[5] = encoder_vals[7];  // old1 = new1
+    encoder_vals[6] = encoder_vals[8];  // old2 = new2
+    
+    int32_t e2 = (value >> 8)  & 0xff;           
+    encoder_vals[2] = e2;
+    
+    int32_t e3 = value & 0xfc;           
+    encoder_vals[3] = e3;
+    
+    int32_t e4 = value & 0x3;           
+    encoder_vals[4] = e4;               
+
+}
+
+float DistanceTest(int trig, int echo){
+  print("%d", trig);
+  print("%d", echo);
+}  
+  
+
 
   
   
