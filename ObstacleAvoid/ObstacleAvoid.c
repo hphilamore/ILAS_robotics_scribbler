@@ -11,7 +11,7 @@ float Feedback, Setpoint;
 float kp, ki, kd;
 
 float DistanceSense(int trig_pin, int echo_pin);
-int calculatePID(float Setpoint, float Feedback);
+//int calculatePID(float Setpoint, float Feedback);
 
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
 void encoder_update(void);
@@ -55,7 +55,21 @@ int main()
     if (s3_resetButtonCount() == 3) {
       // line following : binary controller
       //LineFollowBinary(); 
-      LineFollow("b");    
+      //LineFollow("b"); 
+      float sp = DistanceSense(0, 1); 
+      int bias = 55;
+      print("%.2f\n", sp);
+      
+      s3_motorSet(50, 50, 0);
+      pause(1000);
+      
+      while(1){
+        float fb = DistanceSense(0, 1); 
+        //print("setpoint = %d, feedback = %d, bias = %d, left = %d, right = %d\n", sp, Feedback, Bias, leftMotorSpeed , rightMotorSpeed);
+        calculatePID(sp, fb, bias);
+        //motorPIDcontrol(PIDvalue, sp_out);
+        pause(100);
+      }     
       
     } 
         
@@ -148,15 +162,23 @@ int main()
 
 }
 
-int calculatePID(float Setpoint, float Feedback){
-  // Returns a value to chnage motor speed by to correct error between feedbacl and set point
+void calculatePID(float Setpoint, float Feedback, int Bias){
+  // Change motor speed by to correct error between feedback and set point
+  
+   //int out_sp = Bias;
+   int out_max = 100;
+   int out_min = 10;
+   float in_max = 2 * Setpoint;
+   float in_min = 0;
+  
+   kp = (float) 0.5 * ((out_max - out_min)/(in_max - in_min));
   
    /*How long since we last calculated*/
    int PID_time_new = CNT/st_usTicks;
    int timeChange = (PID_time_new - PID_time_old);
   
    // Find error variables
-   float err = Setpoint - Feedback;
+   float err = -1 * (Setpoint - Feedback);
    P =   err; 
    I += (err * timeChange);
    D =  (err - PID_err_old) / timeChange;
@@ -166,14 +188,43 @@ int calculatePID(float Setpoint, float Feedback){
    PID_time_old = PID_time_new;
 
    /*Compute PID Output*/
-   return (int)(kp * P + ki * I + kd * D);
+   //return (int)(kp * P + ki * I + kd * D);
+   int PIDvalue = (int)(kp * P + ki * I + kd * D);
    
+   int leftMotorSpeed = Bias + PIDvalue;
+   int rightMotorSpeed = Bias - PIDvalue;
+   s3_motorSet( leftMotorSpeed , rightMotorSpeed , 0);
+   
+   if(leftMotorSpeed > rightMotorSpeed){    
+     // green
+     s3_setLED(S3_LEFT, S3_COLOR_FF0000);
+     s3_setLED(S3_CENTER, S3_COLOR_FF0000);
+     s3_setLED(S3_RIGHT, S3_COLOR_FF0000);} 
+       
+   else if(leftMotorSpeed < rightMotorSpeed){    
+     // red
+     s3_setLED(S3_LEFT, S3_COLOR_00FF00);
+     s3_setLED(S3_CENTER, S3_COLOR_00FF00);
+     s3_setLED(S3_RIGHT, S3_COLOR_00FF00);}
+     
+   else{
+     // off
+     s3_setLED(S3_LEFT, S3_COLOR_000000);
+     s3_setLED(S3_CENTER, S3_COLOR_000000);
+     s3_setLED(S3_RIGHT, S3_COLOR_000000);}
+      
+   
+   //print("setpoint = %f, feedback = %f, bias = %d, kp = %f, err = %f, PIDval = %d, left = %d, right = %d\n", Setpoint, Feedback, Bias, kp, err, PIDvalue, leftMotorSpeed, rightMotorSpeed);
+   print("setpoint = %f, feedback = %f, bias = %d, left = %d, right = %d\n", Setpoint, Feedback, Bias, leftMotorSpeed, rightMotorSpeed);
+   
+   pause(100);
 }
 
-void motorPIDcontrol(int PIDvalue, int bias){
+
+void motorPIDcontrol(int PIDvalue, int bias){ 
   // sets the motor speed based on a PID control variable and bias 
-  int leftMotorSpeed = bias - PIDvalue;
-  int rightMotorSpeed = bias + PIDvalue;
+  int leftMotorSpeed = bias + PIDvalue;
+  int rightMotorSpeed = bias - PIDvalue;
   s3_motorSet( leftMotorSpeed , rightMotorSpeed , 0);
 }
 
@@ -639,6 +690,7 @@ void WallFollow(float set_point,
     //s3_motorSet(basic_speed - 20, basic_speed + 20, 0);
     //s3_motorSet(40, basic_speed, 0);
     s3_motorSet(high, low, 0);
+    // green
     s3_setLED(S3_LEFT, S3_COLOR_FF0000);
     s3_setLED(S3_CENTER, S3_COLOR_FF0000);
     s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
@@ -651,6 +703,7 @@ void WallFollow(float set_point,
     //s3_motorSet(basic_speed + 20, basic_speed - 20, 0);
     //s3_motorSet(basic_speed, 40, 0);
     s3_motorSet(low, high, 0);
+    // red
     s3_setLED(S3_LEFT, S3_COLOR_00FF00 );
     s3_setLED(S3_CENTER, S3_COLOR_00FF00 );
     s3_setLED(S3_RIGHT, S3_COLOR_00FF00 );    
