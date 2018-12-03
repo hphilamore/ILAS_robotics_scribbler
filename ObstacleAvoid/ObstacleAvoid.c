@@ -171,7 +171,8 @@ void calculatePID(float Setpoint, float Feedback, int Bias){
    float in_max = 2 * Setpoint;
    float in_min = 0;
   
-   kp = (float) 0.5 * ((out_max - out_min)/(in_max - in_min));
+   //kp = (float) 0.5 * ((out_max - out_min)/(in_max - in_min));
+   kp = (float) 0.4 * ((out_max - out_min)/(in_max - in_min));
   
    /*How long since we last calculated*/
    int PID_time_new = CNT/st_usTicks;
@@ -195,17 +196,19 @@ void calculatePID(float Setpoint, float Feedback, int Bias){
    int rightMotorSpeed = Bias - PIDvalue;
    s3_motorSet( leftMotorSpeed , rightMotorSpeed , 0);
    
-   if(leftMotorSpeed > rightMotorSpeed){    
+   if(leftMotorSpeed > rightMotorSpeed){ 
      // green
-     s3_setLED(S3_LEFT, S3_COLOR_FF0000);
-     s3_setLED(S3_CENTER, S3_COLOR_FF0000);
-     s3_setLED(S3_RIGHT, S3_COLOR_FF0000);} 
-       
-   else if(leftMotorSpeed < rightMotorSpeed){    
-     // red
      s3_setLED(S3_LEFT, S3_COLOR_00FF00);
      s3_setLED(S3_CENTER, S3_COLOR_00FF00);
-     s3_setLED(S3_RIGHT, S3_COLOR_00FF00);}
+     s3_setLED(S3_RIGHT, S3_COLOR_00FF00);}   
+     
+       
+   else if(leftMotorSpeed < rightMotorSpeed){ 
+     // red
+     s3_setLED(S3_LEFT, S3_COLOR_FF0000);
+     s3_setLED(S3_CENTER, S3_COLOR_FF0000);
+     s3_setLED(S3_RIGHT, S3_COLOR_FF0000);}    
+
      
    else{
      // off
@@ -690,7 +693,7 @@ void WallFollow(float set_point,
     //s3_motorSet(basic_speed - 20, basic_speed + 20, 0);
     //s3_motorSet(40, basic_speed, 0);
     s3_motorSet(high, low, 0);
-    // green
+    // red
     s3_setLED(S3_LEFT, S3_COLOR_FF0000);
     s3_setLED(S3_CENTER, S3_COLOR_FF0000);
     s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
@@ -703,7 +706,7 @@ void WallFollow(float set_point,
     //s3_motorSet(basic_speed + 20, basic_speed - 20, 0);
     //s3_motorSet(basic_speed, 40, 0);
     s3_motorSet(low, high, 0);
-    // red
+    // green
     s3_setLED(S3_LEFT, S3_COLOR_00FF00 );
     s3_setLED(S3_CENTER, S3_COLOR_00FF00 );
     s3_setLED(S3_RIGHT, S3_COLOR_00FF00 );    
