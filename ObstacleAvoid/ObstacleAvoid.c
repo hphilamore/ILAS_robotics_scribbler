@@ -16,13 +16,15 @@ float DistanceSense(int trig_pin, int echo_pin);
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
 void encoder_update(void);
 
-   
+float test_vals[9];
         
 
 int main()                                    
 {
   s3_setup();
   PID_time_old = CNT/st_usTicks;
+  
+  test_vals[0] = 1;
   
 
 
@@ -31,8 +33,14 @@ int main()
       // Turn on spot
       //WhiteCalibrate();   
       //Calibrate("w"); 
+      pause(2000);
       while(1){   
-           TurnToLight(70);}      
+        //   TurnToLight(70);}   
+      float d = DistanceSense(0, 1); 
+      print("%.2f\n", d);
+      pause(2000);
+      
+      }      
     }  
     
     
@@ -165,7 +173,6 @@ int main()
 void calculatePID(float Setpoint, float Feedback, int Bias){
   // Change motor speed by to correct error between feedback and set point
   
-   //int out_sp = Bias;
    int out_max = 100;
    int out_min = 10;
    float in_max = 2 * Setpoint;
@@ -173,6 +180,8 @@ void calculatePID(float Setpoint, float Feedback, int Bias){
   
    //kp = (float) 0.5 * ((out_max - out_min)/(in_max - in_min));
    kp = (float) 0.4 * ((out_max - out_min)/(in_max - in_min));
+   kd = 1;
+   ki = 0;
   
    /*How long since we last calculated*/
    int PID_time_new = CNT/st_usTicks;
@@ -181,8 +190,8 @@ void calculatePID(float Setpoint, float Feedback, int Bias){
    // Find error variables
    float err = -1 * (Setpoint - Feedback);
    P =   err; 
-   I += (err * timeChange);
-   D =  (err - PID_err_old) / timeChange;
+   I +=  err; //(err * timeChange);
+   D =  (fabs(err) - fabs(PID_err_old)); // (err - PID_err_old) / timeChange;
   
    /*Remember some variables for next time*/
    PID_err_old = err;
@@ -218,9 +227,60 @@ void calculatePID(float Setpoint, float Feedback, int Bias){
       
    
    //print("setpoint = %f, feedback = %f, bias = %d, kp = %f, err = %f, PIDval = %d, left = %d, right = %d\n", Setpoint, Feedback, Bias, kp, err, PIDvalue, leftMotorSpeed, rightMotorSpeed);
+   print("D = %f \n", D);
    print("setpoint = %f, feedback = %f, bias = %d, left = %d, right = %d\n", Setpoint, Feedback, Bias, leftMotorSpeed, rightMotorSpeed);
+   print("\n");
    
-   pause(100);
+   pause(50);
+}
+
+void PID(float Setpoint, float Feedback, int Bias){
+  // Change motor speed by to correct error between feedback and set point
+  // Classroom version
+  
+   int out_max = 100;
+   int out_min = 10;
+   float in_max = 2 * Setpoint;
+   float in_min = 0;
+  
+   kp = (float) 0.4 * ((out_max - out_min)/(in_max - in_min));
+   kd = 2;
+  
+  
+   /*How long since we last calculated*/
+   int PID_time_new = CNT/st_usTicks;
+   int timeChange = (PID_time_new - PID_time_old);
+  
+   // Find error variables
+   float err = -1 * (Setpoint - Feedback);
+   P =   err; 
+   I +=  err; //(err * timeChange);
+   D =  (fabs(err) - fabs(PID_err_old)); // (err - PID_err_old) / timeChange;
+  
+   /*Remember some variables for next time*/
+   PID_err_old = err;
+   PID_time_old = PID_time_new;
+
+   /*Compute PID Output*/
+   //return (int)(kp * P + ki * I + kd * D);
+   int PIDvalue = (int)(kp * P + ki * I + kd * D);
+   
+   int leftMotorSpeed = Bias + PIDvalue;
+   int rightMotorSpeed = Bias - PIDvalue;
+   s3_motorSet( leftMotorSpeed , rightMotorSpeed , 0);
+   
+   if(leftMotorSpeed > rightMotorSpeed){ 
+     s3_setLED(S3_CENTER, S3_COLOR_00FF00);}     // green  
+     
+       
+   else if(leftMotorSpeed < rightMotorSpeed){ 
+     s3_setLED(S3_CENTER, S3_COLOR_FF0000);} // red   
+
+     
+   else{
+     s3_setLED(S3_CENTER, S3_COLOR_000000);} // off
+   
+   pause(100); // loop rate
 }
 
 
@@ -754,12 +814,15 @@ float DistanceSense(int trig_pin, int echo_pin){
   // send a pulse
   int time_old = CNT/st_usTicks;
   int time_new = CNT/st_usTicks;
-  int time_delta = 10;    
+  int time_delta = 10;   
+  
+  print("  sending pulse \n"); 
   while(time_new - time_old < time_delta){    
      high(trig_pin);       
      time_new = CNT/st_usTicks;}
   low(trig_pin);
-  
+  print("ending pulse \n");
+   
   
   int echo, previousEcho, lowHigh, highLow;
   int startTime, stopTime, difference;
@@ -770,17 +833,21 @@ float DistanceSense(int trig_pin, int echo_pin){
   lowHigh = highLow = echo = previousEcho = 0;
   
   while(0 == lowHigh || highLow == 0) {
+    print("waiting for pulse \n");
     previousEcho = echo;
     echo = input(echo_pin);
+    print("echo = %d \n", input(echo_pin));
     
     if(0 == lowHigh && 0 == previousEcho && 1 == echo) {
       lowHigh = 1;
       startTime = CNT/st_usTicks;
+      print("recieve pulse started \n");
     }
     
     if(1 == lowHigh && 1 == previousEcho && 0 == echo) {
       highLow = 1;
       stopTime = CNT/st_usTicks;
+      print("recieve pulse ended \n");
     }
   }
   difference = stopTime - startTime;
