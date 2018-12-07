@@ -10,7 +10,14 @@ float P, I, D;
 float Feedback, Setpoint;
 float kp, ki, kd;
 
+float DistanceTest(int trig, int echo);
+
+float DistanceSense_test(int trig_pin, int echo_pin);
+
+//float DistanceTestMeasure(int trig, int echo);
+
 float DistanceSense(int trig_pin, int echo_pin);
+
 //int calculatePID(float Setpoint, float Feedback);
 
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
@@ -36,8 +43,8 @@ int main()
       pause(2000);
       while(1){   
         //   TurnToLight(70);}   
-      float d = DistanceSense(0, 1); 
-      print("%.2f\n", d);
+      DistanceTestMeasure(0, 1); 
+      ///print("%.2f\n", d);
       pause(2000);
       
       }      
@@ -85,7 +92,20 @@ int main()
      if (s3_resetButtonCount() == 4) {
       // line following : proportional controller
       //LineFollowProp(); 
-      LineFollow("p");           
+      //LineFollow("p");
+      while(1){
+        float pi = 3.142;
+        float val = sin(pi);
+        print("%f\n", val);
+      }      
+      
+      //while(1){
+        //DistanceTestMeasure(0, 1);
+        //float fb = DistanceSense(0, 1);
+        //print("%f", fb);
+        
+        
+      //}                   
           
     } 
     
@@ -93,7 +113,9 @@ int main()
       // line following : proportional controller
       //LineFollowProp();
       while(1){ 
-        AnalogLightFollow(); 
+        //AnalogLightFollow(); 
+        int d = ping_cm(1);
+        print("%d \n", d);
       }                    
     }  
     
@@ -104,12 +126,19 @@ int main()
       while(1){ 
         //IR_ObstacleAvoid(70);
         
+        /*
         DigitalLightFollow(70);
         //SimpleLightFollow(70);
         
         pause(200);
         IR_ObstacleAvoid(70);
         StallAvoid(70);
+        */
+
+      for(int i=0; i<1800; i=i+100){
+        servo_angle(5, i);
+        pause(1000);
+      }        
         
         
       }                    
@@ -169,6 +198,166 @@ int main()
     }        
 
 }
+
+void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
+  
+  // flag to indicate presence of obstacle
+  int flag = 0;
+  
+  // convert goal global --> local
+  float dxR = dxI * cos(theta)  + dyI * sin(theta);
+  float dyR = dyI * -sin(theta) + dyI * cos(theta); 
+  
+  // convert local x,y to polar coordinates
+  float aR = atan( dyR / dxR );               // angle
+  float dR = (dxR**2 + dyR**2) ** (1/2);      // distance
+  
+  // encoder count at start
+  encoder_update(void)
+  enLold = encoder_vals[0];
+  enRold = encoder_vals[1];
+  enLnew; 
+  enRnew; 
+  
+  // distance and angle elapsed in local frame of reference
+  float aR_ = 0.0;
+  float dR_ = 0.0;  
+  
+  while( fabs(aR_) < fabs(aR) || fabs(dR_) < fabs(dR)){ // while goal not reached
+  
+    // check for obstacles
+    if(s3_simpleObstacle(S3_IS, S3_DETECTED)){
+      
+      // put obstacle flag up
+      flag = 1; 
+   
+      IR_ObstacleAvoid(basic_speed);
+      
+      /*
+      // update distance elapsed 
+      encoder_update(void)
+      enLnew = encoder_vals[0];
+      enRnew = encoder_vals[1];
+      aR_ += ((enLnew - enLold) + (enRnew - enRold)) / 2;
+      dR_ += ((enLnew - enLold) - (enRnew - enRold)) / 2; 
+      */
+      
+      /*
+      // convert polar --> x, y coordinates
+      float dxR_ = dR_ * cos(aR_);  
+      float dyR_ = dR_ * sin(aR_);
+      
+      
+      // convert local to global coordinates
+      float dxI_ = dxR_ * cos(theta) + dyI * -sin(theta);  
+      float dyI_ = dyR_ * sin(theta) + dyI * cos(theta); 
+      
+      
+      // find the new distnace from robot to goal
+      dxI -= dxI_ 
+      dyI -= dyI_ 
+      
+      
+      // find the new angle of the robot to the global reference frame 
+      theta += aR_
+      
+      
+      // convert goal global --> local
+      float dxR = dxI * cos(theta)  + dyI * sin(theta);
+      float dyR = dyI * -sin(theta) + dyI * cos(theta); 
+      
+      
+      // convert local x,y to polar coordinates
+      float aR = atan( dyR / dxR );               // angle
+      float dR = (dxR**2 + dyR**2) ** (1/2);      // distance 
+      
+      
+      // reset the distance and angle elapsed in local frame of reference 
+      float aR_ = 0.0;
+      float dR_ = 0.0;
+      */
+    
+    
+    else{
+      
+      // if obstacle just avoided, recompute goal
+      if(flag == 1){
+        
+        flag = 0; // lower flag
+        // convert polar --> x  , y coordinates
+        float dxR_ = dR_ * cos(aR_);  
+        float dyR_ = dR_ * sin(aR_);
+        
+        
+        // convert local to global coordinates
+        float dxI_ = dxR_ * cos(theta) + dyI * -sin(theta);  
+        float dyI_ = dyR_ * sin(theta) + dyI * cos(theta); 
+        
+        
+        // find the new distnace from robot to goal
+        dxI -= dxI_ 
+        dyI -= dyI_ 
+        
+        
+        // find the new angle of the robot to the global reference frame 
+        theta += aR_
+        
+        
+        // convert goal global --> local
+        float dxR = dxI * cos(theta)  + dyI * sin(theta);
+        float dyR = dyI * -sin(theta) + dyI * cos(theta); 
+        
+        
+        // convert local x,y to polar coordinates
+        float aR = atan( dyR / dxR );               // angle
+        float dR = (dxR**2 + dyR**2) ** (1/2);      // distance 
+        
+        
+        // reset the distance and angle elapsed in local frame of reference 
+        float aR_ = 0.0;
+        float dR_ = 0.0;
+      }
+      
+      
+      // ... otherwise continue moving towards original goal 
+      else{
+        
+        // angle not reached and distance not reached
+        if(fabs(aR_) < fabs(aR) && fabs(dR_) < fabs(dR){
+          
+          // negative angle
+          if(aR < 0){
+            s3_motorSet( basic_speed, -basic_speed, 0);} 
+          
+          // positive angle    
+          else{
+            s3_motorSet( -basic_speed, basic_speed, 0);} 
+                    
+          pause(200);  
+        }
+        
+        // angle reached but distance not reached
+        else{
+          s3_motorSet( basic_speed, basic_speed, 0);
+          pause(200);
+        }
+      }         
+        
+        /*
+        // update distance elapsed 
+        encoder_update(void)
+        enLnew = encoder_vals[0];
+        enRnew = encoder_vals[1];
+        aR_ += ((enLnew - enLold) + (enRnew - enRold)) / 2;
+        dR_ += ((enLnew - enLold) - (enRnew - enRold)) / 2; 
+        */                          
+           
+} 
+
+
+
+
+ 
 
 void calculatePID(float Setpoint, float Feedback, int Bias){
   // Change motor speed by to correct error between feedback and set point
@@ -806,7 +995,9 @@ float DistanceSense(int trig_pin, int echo_pin){
   
   // setup pins
   set_direction(trig_pin, 0); // output
-  set_direction(echo_pin, 1);    // input  
+  set_direction(echo_pin, 1);    // input 
+  
+  
   
   // variables for measuring echo pulse
   
@@ -816,11 +1007,12 @@ float DistanceSense(int trig_pin, int echo_pin){
   int time_new = CNT/st_usTicks;
   int time_delta = 10;   
   
-  print("  sending pulse \n"); 
-  while(time_new - time_old < time_delta){    
+   
+  while(time_new - time_old < time_delta){ 
+     print("  sending pulse \n");   
      high(trig_pin);       
      time_new = CNT/st_usTicks;}
-  low(trig_pin);
+  //low(trig_pin);
   print("ending pulse \n");
    
   
@@ -833,9 +1025,10 @@ float DistanceSense(int trig_pin, int echo_pin){
   lowHigh = highLow = echo = previousEcho = 0;
   
   while(0 == lowHigh || highLow == 0) {
-    print("waiting for pulse \n");
+    //print("waiting for pulse \n");
     previousEcho = echo;
     echo = input(echo_pin);
+    print("%d \t", get_state(trig_pin));
     print("echo = %d \n", input(echo_pin));
     
     if(0 == lowHigh && 0 == previousEcho && 1 == echo) {
@@ -1044,12 +1237,139 @@ void encoder_update(void) {
 }
 
 float DistanceTest(int trig, int echo){
-  print("%d", trig);
-  print("%d", echo);
+  set_direction(trig, 0); 
+  set_direction(echo, 1); 
+  //set_output(trig, 0);
+  low(trig);
+  //pause(2000);
+  //int get_trig = get_state(trig);
+  //int get_echo = get_state(echo);
+  print("%d \t", get_state(trig));
+  print("%d \n", input(echo));
 }  
+
+
+
+
+void DistanceTestMeasure(int trig_pin, int echo_pin){
+  set_direction(trig_pin, 0); 
+  set_direction(echo_pin, 1); 
+  
+  
+  int echo, previousEcho, lowHigh, highLow;
+  int startTime, stopTime, difference;
+  float rangeCm;
+     
+  lowHigh = highLow = echo = previousEcho = 0;
+  
+  
+  
+  // send a pulse
+  int time_old = CNT/st_usTicks;
+  int time_new = CNT/st_usTicks;
+  
+  int time_delta = 5;   
+  while(time_new - time_old < time_delta){    
+     low(trig_pin);       
+     time_new = CNT/st_usTicks;}
+  time_old = CNT/st_usTicks;  
+  
+  print("send pulse \n");
+  time_delta = 10; 
+  time_new = CNT/st_usTicks;  
+  while(time_new - time_old < time_delta){    
+     high(trig_pin);       
+     time_new = CNT/st_usTicks;}
+  low(trig_pin); 
+  
+
+  // wait to receive return pulse
+  //while(0 == lowHigh || highLow == 0) {
+    //print("waiting for pulse \n");
+    //previousEcho = echo;
+    //echo = input(echo_pin);
+    //print("echo = %d \n", input(echo_pin);
+    
+    //if(0 == lowHigh && 0 == previousEcho && 1 == echo) {
+    //while ( digitalRead(ECHO_PIN) == 0 );
+
+  // Measure how long the echo pin was held high (pulse width)
+  // Note: the micros() counter will overflow after ~70 min
+    while ( input(echo_pin) == 0 ){}
+      int t1 = CNT/st_usTicks;
+    while ( input(echo_pin) == 1 ){}
+      int t2 = CNT/st_usTicks;
+      int pulse_width = t2 - t1;
+  
+  difference = t2 - t1;
+  rangeCm = difference / 58;
+  print("%f\n", rangeCm);
+  
+  pause(2000);
+  
+}
   
 
 
+float DistanceSense_test(int trig_pin, int echo_pin){
+  // Measures the distance of travel of an ultrasonic pulse from HC-SR04 sensor 
+  
+  // setup pins
+  set_direction(trig_pin, 0); // output
+  set_direction(echo_pin, 1);    // input 
+  
+  
+  
+  // variables for measuring echo pulse
+  
+  
+  // send a pulse
+  int time_old = CNT/st_usTicks;
+  int time_new = CNT/st_usTicks;
+  int time_delta = 10;   
+  
+  print("  sending pulse \n"); 
+  while(time_new - time_old < time_delta){    
+     high(trig_pin);       
+     time_new = CNT/st_usTicks;}
+  low(trig_pin);
+  print("ending pulse \n");
+   
+  
+  int echo, previousEcho, lowHigh, highLow;
+  int startTime, stopTime, difference;
+  float rangeCm;
+  
+  
+  // check for received pulse
+  lowHigh = highLow = echo = previousEcho = 0;
+  
+  while(0 == lowHigh || highLow == 0) {
+    print("waiting for pulse \n");
+    previousEcho = echo;
+    echo = input(echo_pin);
+    //print("echo = %d \n", input(echo_pin);
+    
+    if(0 == lowHigh && 0 == previousEcho && 1 == echo) {
+      lowHigh = 1;
+      startTime = CNT/st_usTicks;
+      print("recieve pulse started \n");
+    }
+    
+    if(1 == lowHigh && 1 == previousEcho && 0 == echo) {
+      highLow = 1;
+      stopTime = CNT/st_usTicks;
+      print("recieve pulse ended \n");
+    }
+  }
+  difference = stopTime - startTime;
+  rangeCm = difference / 58;
+  return rangeCm;
+  //print("Start: %d, stop: %d, difference: %d, range: %.2f cm\n", startTime, stopTime, difference, rangeCm);
+  //print("differece: %d, Distance: %.2f cm\n", difference, rangeCm);
+ 
+} 
+  
   
   
   
