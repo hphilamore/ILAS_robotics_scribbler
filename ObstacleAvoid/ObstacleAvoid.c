@@ -3,6 +3,7 @@
 #include "scribbler.h"
 #include "servo.h"
 #include "ping.h"
+#include "math.h"
 
 int PID_time_old; 
 float PID_err_old;
@@ -198,6 +199,126 @@ int main()
     }        
 
 }
+/*
+void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
+  
+  // flag to indicate presence of obstacle
+  int flag = 0;
+  
+  // convert goal global --> local
+  float dxR = dxI * cos(theta)  + dyI * sin(theta);
+  float dyR = dyI * -sin(theta) + dyI * cos(theta); 
+  
+  // convert local x,y to polar coordinates
+  float aR = atan( dyR / dxR );                          // angle
+  float dR = pow((pow(dxR,2) + pow(dyR,2)), (1/2));      // distance
+  
+  // encoder count at start
+  encoder_update();
+  int enLold = encoder_vals[0];
+  int enRold = encoder_vals[1];
+  int enLnew; 
+  int enRnew; 
+  
+  // distance and angle elapsed in local frame of reference
+  float aR_ = 0.0;
+  float dR_ = 0.0;  
+  
+  while( fabs(aR_) < fabs(aR) || fabs(dR_) < fabs(dR)){ // while goal not reached
+  
+    // OBSTACLE
+    if(s3_simpleObstacle(S3_IS, S3_DETECTED)){
+      
+      // put obstacle flag up
+      flag = 1; 
+   
+      IR_ObstacleAvoid(basic_speed);
+    }     
+    
+    
+    // NO OBSTACLE
+    else{
+        
+        // if obstacle just avoided, recompute goal
+        if(flag == 1){
+          
+          flag = 0; // lower flag
+          // convert polar --> x  , y coordinates
+          float dxR_ = dR_ * cos(aR_);  
+          float dyR_ = dR_ * sin(aR_);
+          
+          
+          // convert local to global coordinates
+          float dxI_ = dxR_ * cos(theta) + dyI * -sin(theta);  
+          float dyI_ = dyR_ * sin(theta) + dyI * cos(theta); 
+          
+          
+          // find the new distnace from robot to goal
+          dxI -= dxI_ ;
+          dyI -= dyI_ ;
+          
+          
+          // find the new angle of the robot to the global reference frame 
+          theta += aR_ ;
+          
+          
+          // convert goal global --> local
+          float dxR = dxI * cos(theta)  + dyI * sin(theta);
+          float dyR = dyI * -sin(theta) + dyI * cos(theta); 
+          
+          
+          // convert local x,y to polar coordinates
+          float aR = atan( dyR / dxR );                           // angle
+          float dR = pow((pow(dxR,2) + pow(dyR,2)), (1/2));       // distance 
+          
+          
+          // reset the distance and angle elapsed in local frame of reference 
+          float aR_ = 0.0;
+          float dR_ = 0.0;
+          
+        } //if
+        
+        
+        // ... otherwise continue moving towards original goal 
+        else{
+          
+            // angle not reached and distance not reached
+            if(fabs(aR_) < fabs(aR) && fabs(dR_) < fabs(dR)){
+              
+              // negative angle
+              if(aR < 0){
+                s3_motorSet( basic_speed, -basic_speed, 0);} 
+              
+              // positive angle    
+              else{
+                s3_motorSet( -basic_speed, basic_speed, 0);} 
+                        
+              pause(200);  
+            } 
+          
+            // angle reached but distance not reached
+            else{
+              s3_motorSet( basic_speed, basic_speed, 0);
+              pause(200);
+            } // else
+        } // else  
+        
+    } // else       
+        
+       
+  // update distance elapsed 
+  encoder_update();
+  enLnew = encoder_vals[0];
+  enRnew = encoder_vals[1];
+  aR_ += ((enLnew - enLold) + (enRnew - enRold)) / 2;
+  dR_ += ((enLnew - enLold) - (enRnew - enRold)) / 2; 
+  
+  } // while 
+                               
+           
+} // function 
+*/
+
 
 void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   
@@ -209,154 +330,33 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   float dyR = dyI * -sin(theta) + dyI * cos(theta); 
   
   // convert local x,y to polar coordinates
-  float aR = atan( dyR / dxR );               // angle
-  float dR = (dxR**2 + dyR**2) ** (1/2);      // distance
+  float aR = atan( dyR / dxR );                          // angle
+  float dR = pow((pow(dxR,2) + pow(dyR,2)), (1/2));      // distance
   
   // encoder count at start
-  encoder_update(void)
-  enLold = encoder_vals[0];
-  enRold = encoder_vals[1];
-  enLnew; 
-  enRnew; 
+  encoder_update();
+  int enLold = encoder_vals[0];
+  int enRold = encoder_vals[1];
+  int enLnew; 
+  int enRnew; 
   
   // distance and angle elapsed in local frame of reference
-  float aR_ = 0.0;
-  float dR_ = 0.0;  
+  float aR_ ;
+  float dR_ ;  
   
-  while( fabs(aR_) < fabs(aR) || fabs(dR_) < fabs(dR)){ // while goal not reached
-  
-    // check for obstacles
-    if(s3_simpleObstacle(S3_IS, S3_DETECTED)){
-      
-      // put obstacle flag up
-      flag = 1; 
-   
-      IR_ObstacleAvoid(basic_speed);
-      
-      /*
-      // update distance elapsed 
-      encoder_update(void)
-      enLnew = encoder_vals[0];
-      enRnew = encoder_vals[1];
-      aR_ += ((enLnew - enLold) + (enRnew - enRold)) / 2;
-      dR_ += ((enLnew - enLold) - (enRnew - enRold)) / 2; 
-      */
-      
-      /*
-      // convert polar --> x, y coordinates
-      float dxR_ = dR_ * cos(aR_);  
-      float dyR_ = dR_ * sin(aR_);
-      
-      
-      // convert local to global coordinates
-      float dxI_ = dxR_ * cos(theta) + dyI * -sin(theta);  
-      float dyI_ = dyR_ * sin(theta) + dyI * cos(theta); 
-      
-      
-      // find the new distnace from robot to goal
-      dxI -= dxI_ 
-      dyI -= dyI_ 
-      
-      
-      // find the new angle of the robot to the global reference frame 
-      theta += aR_
-      
-      
-      // convert goal global --> local
-      float dxR = dxI * cos(theta)  + dyI * sin(theta);
-      float dyR = dyI * -sin(theta) + dyI * cos(theta); 
-      
-      
-      // convert local x,y to polar coordinates
-      float aR = atan( dyR / dxR );               // angle
-      float dR = (dxR**2 + dyR**2) ** (1/2);      // distance 
-      
-      
-      // reset the distance and angle elapsed in local frame of reference 
-      float aR_ = 0.0;
-      float dR_ = 0.0;
-      */
+  while( fabs(aR_) < fabs(aR) || fabs  (dR_) < fabs(dR)){ // while goal not reached
     
+    // update distance elapsed 
+    encoder_update();
+    //enLnew = encoder_vals[0];
+    //enRnew = encoder_vals[1];
+    //aR_ += ((enLnew - enLold) + (enRnew - enRold));
+    //dR_ += ((enLnew - enLold) - (enRnew - enRold)); 
     
-    else{
-      
-      // if obstacle just avoided, recompute goal
-      if(flag == 1){
-        
-        flag = 0; // lower flag
-        // convert polar --> x  , y coordinates
-        float dxR_ = dR_ * cos(aR_);  
-        float dyR_ = dR_ * sin(aR_);
-        
-        
-        // convert local to global coordinates
-        float dxI_ = dxR_ * cos(theta) + dyI * -sin(theta);  
-        float dyI_ = dyR_ * sin(theta) + dyI * cos(theta); 
-        
-        
-        // find the new distnace from robot to goal
-        dxI -= dxI_ 
-        dyI -= dyI_ 
-        
-        
-        // find the new angle of the robot to the global reference frame 
-        theta += aR_
-        
-        
-        // convert goal global --> local
-        float dxR = dxI * cos(theta)  + dyI * sin(theta);
-        float dyR = dyI * -sin(theta) + dyI * cos(theta); 
-        
-        
-        // convert local x,y to polar coordinates
-        float aR = atan( dyR / dxR );               // angle
-        float dR = (dxR**2 + dyR**2) ** (1/2);      // distance 
-        
-        
-        // reset the distance and angle elapsed in local frame of reference 
-        float aR_ = 0.0;
-        float dR_ = 0.0;
-      }
-      
-      
-      // ... otherwise continue moving towards original goal 
-      else{
-        
-        // angle not reached and distance not reached
-        if(fabs(aR_) < fabs(aR) && fabs(dR_) < fabs(dR){
-          
-          // negative angle
-          if(aR < 0){
-            s3_motorSet( basic_speed, -basic_speed, 0);} 
-          
-          // positive angle    
-          else{
-            s3_motorSet( -basic_speed, basic_speed, 0);} 
-                    
-          pause(200);  
-        }
-        
-        // angle reached but distance not reached
-        else{
-          s3_motorSet( basic_speed, basic_speed, 0);
-          pause(200);
-        }
-      }         
-        
-        /*
-        // update distance elapsed 
-        encoder_update(void)
-        enLnew = encoder_vals[0];
-        enRnew = encoder_vals[1];
-        aR_ += ((enLnew - enLold) + (enRnew - enRold)) / 2;
-        dR_ += ((enLnew - enLold) - (enRnew - enRold)) / 2; 
-        */                          
+  } // while 
+                               
            
-} 
-
-
-
-
+} // function
  
 
 void calculatePID(float Setpoint, float Feedback, int Bias){
