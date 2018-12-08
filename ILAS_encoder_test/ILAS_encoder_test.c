@@ -29,17 +29,20 @@ int main()                                    // main function
   //cog_run(encoder_update, 65);
 
   // Watch what the other cog is doing to the value of n.
-  while(1)
-  {
+  //while(1)
+  //{
     //print("n = %d\n", n);                     // Display result
     //pause(100); 
                                   // Wait 1/10 of a second 
     //s3_motorSet( 50, -50, 0);
     //print("%f \n", encoder_vals[0]); 
     //GoToGoal();
-    GoToGoal(200, 100, pi/4, 50);   
+    //GoToGoal(200, 100, pi/4, 50); 
+    GoToGoal(200, -100, pi/4, 50);   
+    //GoToGoal(200, -100, pi/4, 50);   
+    //GoToGoal(-200, -100, pi/4, 50);     
     //cog_run(encoder_update, 128);                  // Run blink in other cog
-  } 
+  //} 
 }     
 }
 
@@ -58,58 +61,61 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   // convert local x,y to polar coordinates                        
   float aR = angle2pi(dxR, dyR);                             // angle
   float dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);         // distance
+  print("%f\n", dR);
+  print("%f\n", dR);
+  
+  
   
   float lenR = aR * L / 2;
   
   float left_count_start = encoder_vals[0]; 
   
+  
+  
+  while(1){
+  
   if(turn_flag == 0 || straight_flag == 0){
     
-    print("%f \t", encoder_vals[0]); 
+    //print("\t %f \t", encoder_vals[0]); 
     //print("left encoder %f, start count %f, lenR %f, dR %f \n",   encoder_vals[0], left_count_start, lenR, dR);
-    print("start count %f \t", left_count_start);
-    print("lenR %f \n", lenR);
-    //print("dR %f \t", dR);
-    
-    
-    
-    
-    
-    if(turn_flag == 0){
-        
-        /*
-        // negative angle
-        if(aR < 0){
-          s3_motorSet( basic_speed, -basic_speed, 0);} 
-        
-        // positive angle    
-        else{
-          s3_motorSet( -basic_speed, basic_speed, 0);} 
-          */
-                  
-        ///pause(50);
-        
-        s3_motorSet( basic_speed, -basic_speed, 0);// remove
-        
-        
-        if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenR)){
-          print("reached\n");
-          // put the flag up
-          //turn_flag = 1;
-          // reset the count
-          //left_count_start = encoder_vals[0];
-          //s3_motorSet( 0, 0, 0);
-         } 
-         
-        
-          
-     } // if 
+    //print("start count %f \t", left_count_start);
+    //print("lenR %f \n", lenR);
+    //print("dR %f \n", dR);
+      
+     if(turn_flag == 0){
+      s3_motorSet( basic_speed, -basic_speed, 0);// remove      
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenR)){
+        //print("reached\n");
+        // put the flag up
+        turn_flag = 1;
+        // reset the count
+        left_count_start = encoder_vals[0];
+        //s3_motorSet( 0, 0, 0);
+       } //if
+     } // if         
+     
+     
+     else if(straight_flag == 0){
 
-    
-  }    
+     s3_motorSet( basic_speed, basic_speed, 0);
+     if(fabs(encoder_vals[0] - left_count_start) >= fabs(dR)){
+          // put the flag up
+          straight_flag = 1;
+          print("reached!");
+          s3_simpleStop();
+          //s3_motorSet( 0, 0, 0);  
+        }                  
+             
+     } // else if
+      
+   } // if (turn_flag == 0 || straight_flag == 0)
   
-  //print("%f \n", encoder_vals[0]);
-}  
+      
+  }// while  
+  
+  
+}     
+  
   
 
 
@@ -169,24 +175,17 @@ void encoder_update(void) {
 
 float angle2pi(float x, float y){
     // Finds angle in range 2pi
-    
-   // pi - (pi/2) * (1 + sgn(x)) 
-   
-       /*
-        float angle = (
-        pi - (pi/2) * (1 + sgn(x)) * (1 - sgn(powf(y, 2))) - 
-        (pi/4) * (2 + sgn(x)) * sgn(y) - 
-        sgn(x * y) * 
-        asin( (fabs(x) - fabs(y)) / powf((2 * powf(x, 2) + 2 * powf(y, 2)), 0.5
-        );
-        */
 
+        
         float angle = (
         pi - (pi/2) * (1 + sgn(x)) * (1 - sgn(powf(y, 2))) - 
         (pi/4) * (2 + sgn(x)) * sgn(y)- 
         sgn(x * y) * 
         asin( (fabs(x) - fabs(y)) / powf((2 * powf(x, 2) + 2 * powf(y, 2)), 0.5) )
         );
+        
+        
+        //float angle = atan2(y, x);
         
         //print("%f", angle);
         
