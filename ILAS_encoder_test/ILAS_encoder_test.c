@@ -34,10 +34,10 @@ int main()                                    // main function
     //print("n = %d\n", n);                     // Display result
     //pause(100); 
                                   // Wait 1/10 of a second 
-    s3_motorSet( 50, -50, 0);
+    //s3_motorSet( 50, -50, 0);
     //print("%f \n", encoder_vals[0]); 
     //GoToGoal();
-    GoToGoal(200, 100, pi/4, 30);   
+    GoToGoal(200, 100, pi/4, 50);   
     //cog_run(encoder_update, 128);                  // Run blink in other cog
   } 
 }     
@@ -65,9 +65,45 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   
   if(turn_flag == 0 || straight_flag == 0){
     
-    print("%f \n", encoder_vals[0]); 
+    print("%f \t", encoder_vals[0]); 
     //print("left encoder %f, start count %f, lenR %f, dR %f \n",   encoder_vals[0], left_count_start, lenR, dR);
-       
+    print("start count %f \t", left_count_start);
+    print("lenR %f \n", lenR);
+    //print("dR %f \t", dR);
+    
+    
+    
+    
+    
+    if(turn_flag == 0){
+        
+        /*
+        // negative angle
+        if(aR < 0){
+          s3_motorSet( basic_speed, -basic_speed, 0);} 
+        
+        // positive angle    
+        else{
+          s3_motorSet( -basic_speed, basic_speed, 0);} 
+          */
+                  
+        ///pause(50);
+        
+        s3_motorSet( basic_speed, -basic_speed, 0);// remove
+        
+        
+        if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenR)){
+          print("reached\n");
+          // put the flag up
+          //turn_flag = 1;
+          // reset the count
+          //left_count_start = encoder_vals[0];
+          //s3_motorSet( 0, 0, 0);
+         } 
+         
+        
+          
+     } // if 
 
     
   }    
