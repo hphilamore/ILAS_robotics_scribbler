@@ -3,6 +3,7 @@
 #include "simpletools.h"                      // Include simpletools
 #include "s3.h" 
 #include "scribbler.h"
+#include "math.h"
 
 void adder(void *par);                        // Forward declaration
 void encoder_update(void);                        // Forward declaration
