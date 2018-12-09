@@ -39,10 +39,14 @@ int main()                                    // main function
     //s3_motorSet( 50, -50, 0);
     //print("%f \n", encoder_vals[0]); 
     //GoToGoal();
+    
+    
     //GoToGoal(200, 100, pi/4, 50); 
-    GoToGoal(200, 100, pi/4, 50);   
     //GoToGoal(200, -100, pi/4, 50);   
-    //GoToGoal(-200, -100, pi/4, 50);     
+    GoToGoal(-200, 100, pi/4, 50);   
+    //GoToGoal(-200, -100, pi/4, 50); 
+    
+        
     //cog_run(encoder_update, 128);                  // Run blink in other cog
   //} 
   }
@@ -344,16 +348,17 @@ void encoder_update(void) {
 float angle2pi(float x, float y){
     // Finds angle in range 2pi
 
-        
+        /*
         float angle = (
         pi - (pi/2) * (1 + sgn(x)) * (1 - sgn(powf(y, 2))) - 
         (pi/4) * (2 + sgn(x)) * sgn(y)- 
         sgn(x * y) * 
         asin( (fabs(x) - fabs(y)) / powf((2 * powf(x, 2) + 2 * powf(y, 2)), 0.5) )
         );
+        */
         
         
-        //float angle = atan2(y, x);
+        float angle = atan2(y, x);
         
         //print("%f", angle);
         
