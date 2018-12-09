@@ -99,7 +99,7 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   // convert local x,y to polar coordinates                        
   float aR = angle2pi(dxR, dyR);                             // angle
   float dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);         // distance
-  //print("%f\n", dR);
+  //print("angle %f\n", aR);
   //print("%f\n", dR);
   
   
