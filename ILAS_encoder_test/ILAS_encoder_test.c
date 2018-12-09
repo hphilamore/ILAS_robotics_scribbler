@@ -164,9 +164,12 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
      } // else if
       
    //} // if (turn_flag == 0 || straight_flag == 0)
+   
+     else if(straight_flag == 1){
+       break;}       
   
       
-  }// while  
+  }// while 
   
   
 }     
@@ -344,7 +347,7 @@ void encoder_update(void) {
 
 }
 
-
+/*
 
 float angle2pi(float x, float y){
     // Finds angle as a positive value in range 0 --> 2pi
@@ -358,16 +361,16 @@ float angle2pi(float x, float y){
         );
         
         
-        /*
-        float angle = atan2(y, x);
-        */
+        
+        // float angle = atan2(y, x);
+        
         
         //print("%f", angle);
         
         return angle;
         
 }        
-  
+*/ 
     
     
 float sgn(float v) {
