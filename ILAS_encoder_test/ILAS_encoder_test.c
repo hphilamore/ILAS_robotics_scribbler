@@ -121,7 +121,19 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
     //print("dR %f \n", dR);
       
      if(turn_flag == 0){
-      s3_motorSet( basic_speed, -basic_speed, 0);// remove      
+      //s3_motorSet( -basic_speed, basic_speed, 0);// remove  
+      
+      
+      // negative angle
+      if(aR < 0){
+        s3_motorSet( basic_speed, -basic_speed, 0);} 
+      
+      // positive angle    
+      else{
+        s3_motorSet( -basic_speed, basic_speed, 0);} 
+      
+      
+          
       if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenR)){
         //print("reached\n");
         // put the flag up
