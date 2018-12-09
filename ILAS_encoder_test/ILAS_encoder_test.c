@@ -41,9 +41,9 @@ int main()                                    // main function
     //GoToGoal();
     
     
-    //GoToGoal(200, 100, pi/4, 50); 
+    GoToGoal(200, 100, pi/4, 50); 
     //GoToGoal(200, -100, pi/4, 50);   
-    GoToGoal(-200, 100, pi/4, 50);   
+    //GoToGoal(-200, 100, pi/4, 50);   
     //GoToGoal(-200, -100, pi/4, 50); 
     
         
@@ -101,7 +101,8 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   float dyR = dxI * -sin(theta)+ dyI * cos(theta); 
 
   // convert local x,y to polar coordinates                        
-  float aR = angle2pi(dxR, dyR);                             // angle
+  //float aR = angle2pi(dxR, dyR);                           // angle
+  float aR = atan2(dyR, dxR);                                    // angle
   float dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);         // distance
   //print("angle %f\n", aR);
   //print("%f\n", dR);
@@ -346,19 +347,20 @@ void encoder_update(void) {
 
 
 float angle2pi(float x, float y){
-    // Finds angle in range 2pi
+    // Finds angle as a positive value in range 2pi
 
-        /*
+        
         float angle = (
         pi - (pi/2) * (1 + sgn(x)) * (1 - sgn(powf(y, 2))) - 
         (pi/4) * (2 + sgn(x)) * sgn(y)- 
         sgn(x * y) * 
         asin( (fabs(x) - fabs(y)) / powf((2 * powf(x, 2) + 2 * powf(y, 2)), 0.5) )
         );
-        */
         
         
+        /*
         float angle = atan2(y, x);
+        */
         
         //print("%f", angle);
         
