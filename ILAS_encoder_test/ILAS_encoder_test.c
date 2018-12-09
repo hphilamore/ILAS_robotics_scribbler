@@ -117,7 +117,7 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   
   while(1){
   
-  if(turn_flag == 0 || straight_flag == 0){
+  //if(turn_flag == 0 || straight_flag == 0){
     
     //print("%f \t", encoder_vals[0]); 
     //print("left encoder %f, start count %f, lenR %f, dR %f \n",   encoder_vals[0], left_count_start, lenR, dR);
@@ -163,7 +163,7 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
              
      } // else if
       
-   } // if (turn_flag == 0 || straight_flag == 0)
+   //} // if (turn_flag == 0 || straight_flag == 0)
   
       
   }// while  
@@ -347,7 +347,7 @@ void encoder_update(void) {
 
 
 float angle2pi(float x, float y){
-    // Finds angle as a positive value in range 2pi
+    // Finds angle as a positive value in range 0 --> 2pi
 
         
         float angle = (
