@@ -8,10 +8,10 @@
 //void adder(void *par);                        // Forward declaration
 void encoder_update(void);                        // Forward declaration
 void GoToGoal(float dxI, float dyI, float theta, int basic_speed);
-float angle2pi(float x, float y);
-float sgn(float v);
+//float angle2pi(float x, float y);
+//float sgn(float v);
 
-static volatile int t, n;                     // Global vars for cogs to share
+//static volatile int t, n;                     // Global vars for cogs to share
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder dat
 unsigned int stack[40 + 25];                  // Stack vars for other cog
 #define pi 3.14159265358979323846
