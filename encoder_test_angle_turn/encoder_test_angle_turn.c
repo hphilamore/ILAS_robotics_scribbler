@@ -14,6 +14,7 @@ void wheel_motors(int left_speed, int right_speed, int duration);
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
 static float motor_vals[2] = {0, 0}; 
 static float encoder_count[2] = {0, 0}; 
+//static float encoder_current[2] = {0, 0};
 unsigned int stack[40 + 25];    // Stack var for other cog
 
 #define pi 3.14159265358979323846
@@ -28,13 +29,17 @@ cog_run(encoder_update_cog, 65);
 cog_run(encoder_counter, 65);
 //cogstart(encoder_counter, NULL, stack, sizeof(stack));
 
+wheel_motors(100, 100, 5000);
+wheel_motors(-100, 100, 5000);
 
+/*
 if (s3_resetButtonCount() == 1) {
 	GoToGoal(200, -100, pi/2, pi/4, 50); 
     }
+    */
 }
 
-
+/*
 void GoToGoal(float dxI, float dyI, float dtheta, float theta, int basic_speed){
 
 int turn_flag = 0;
@@ -63,13 +68,7 @@ int orientation_flag = 0;
   while(1){
     if(turn_flag == 0){   // turn to angle
     
-    /*
-    if(aR < 0){      // negative angle
-    	s3_motorSet( basic_speed, -basic_speed, 0);} 
-    
-    else{            // positive angle
-    	s3_motorSet( -basic_speed, basic_speed, 0);}
-    */
+
 
 
     //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
@@ -103,13 +102,7 @@ int orientation_flag = 0;
     
     else if(orientation_flag == 0){    // drive to goal
     
-      /*
-      if(aR < 0){      // negative angle
-    	    s3_motorSet( basic_speed, -basic_speed, 0);} 
-    
-      else{            // positive angle
-    	    s3_motorSet( -basic_speed, basic_speed, 0);}
-      */
+
          
          
       //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
@@ -132,7 +125,7 @@ int orientation_flag = 0;
   
   }// while 
 } 
-
+*/
 
 
 void encoder_update_cog(void) { 
@@ -203,21 +196,42 @@ float sgn(float v) {
 
 
 void encoder_counter(void){
+  int left_speed_old = motor_vals[0];
+  int right_speed_old = motor_vals[1];
+
   float left_old = encoder_vals[0];
   float right_old = encoder_vals[1];
-  float left_new; 
-  float right_new; 
+  //float left_new; 
+  //float right_new; 
   
-  while(1){
-    left_new += encoder_count[0] - left_old;
-    right_new += encoder_count[1] - right_old;
+  while(1){     
+    encoder_count[0] = encoder_vals[0] - left_old;
+    encoder_count[1] = encoder_vals[1] - right_old;
+    print("%f\t", encoder_count[0]);
+    print("%f\n", encoder_count[1]);
+    
+    
+    // if the motorinput changes, update the global position variables
+    if(motor_vals[0] != left_speed_old || motor_vals[1] != right_speed_old){
+      left_old = encoder_count[0];
+      right_old = encoder_count[1];
+      encoder_count[0] = 0;
+      encoder_count[1] = 0;
+      motor_vals[0] = left_speed_old;
+      motor_vals[1] = right_speed_old;
+      
+      
+      //x_glob = 0;
+      //y_glob = 0;
+      //th_glob = 0;
+    }      
   }    
 }  
 
 
 
 void wheel_motors(int left_speed, int right_speed, int duration){
-  s3_motorSet( left_speed, right_speed, 0);
+  s3_motorSet( left_speed, right_speed, duration);
   motor_vals[0] = left_speed;
   motor_vals[1] = right_speed;
     
