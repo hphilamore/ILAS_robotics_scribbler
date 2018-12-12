@@ -9,6 +9,7 @@ void GoToGoal(float dxI, float dyI, float dtheta, float theta, int basic_speed);
 float sgn(float v);
 void encoder_counter(void);
 void wheel_motors(int left_speed, int right_speed, int duration);
+void IR_ObstacleAvoid(int basic_speed);
 
 // constants
 #define pi 3.14159265358979323846
@@ -17,7 +18,6 @@ void wheel_motors(int left_speed, int right_speed, int duration);
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
 static float motor_speed[2] = {0, 0}; 
 static float encoder_count[2] = {0, 0}; 
-//static float encoder_current[2] = {0, 0};
 unsigned int stack[40 + 25];             // Stack var for other cog
 int L = 145;  // distance between robot wheels (mm)
 float global_position[3] = {0, 0, 0}; // initial position in global frame : x, y, theta
@@ -29,6 +29,7 @@ float global_position[3] = {0, 0, 0}; // initial position in global frame : x, y
 int main() // main function
 {
 s3_setup();
+int time_old = CNT/st_usTicks;
 
 
 //cogstart(encoder_update_cog, NULL, stack, sizeof(stack)); 
@@ -36,8 +37,44 @@ cog_run(encoder_update_cog, 65);
 cog_run(encoder_counter, 65);
 //cogstart(encoder_counter, NULL, stack, sizeof(stack));
 
-wheel_motors(100, 100, 5000);
-wheel_motors(-100, 100, 5000);
+while(1){
+
+//if(s3_simpleObstacle(S3_IS, S3_DETECTED)){
+   
+    // s3_setLED(S3_CENTER, S3_COLOR_FF0000);
+    // wheel_motors(100, 100, 5000);
+     //IR_ObstacleAvoid(50);
+   // }  
+    
+//else{
+    
+    wheel_motors(100, 100, 0); 
+    
+    //wheel_motors(100, -100, 5000);
+   //}  
+ }       
+
+
+/*
+while(1){
+  
+  
+  print("%d\n", CNT/st_msTicks);
+  
+  if(CNT/st_msTicks > 15000){
+    wheel_motors(-50, 50, 0);
+  } 
+  
+  if(CNT/st_msTicks > 15000){
+    wheel_motors(-50, 50, 0);
+  } 
+  
+}
+*/
+
+//wheel_motors(100, 100, 5000);
+
+//wheel_motors(-100, 100, 5000);
 
 /*
 if (s3_resetButtonCount() == 1) {
@@ -214,6 +251,13 @@ void encoder_counter(void){
   while(1){     
     encoder_count[0] = encoder_vals[0] - left_old;
     encoder_count[1] = encoder_vals[1] - right_old;
+    
+    
+    print("%f\t", left_speed_old);
+    print("%f\t", right_speed_old);
+    print("%f\t", motor_speed[0]);
+    print("%f\t", motor_speed[1]);
+    
     print("%f\t", encoder_count[0]);
     print("%f\t", encoder_count[1]);
     
@@ -226,8 +270,8 @@ void encoder_counter(void){
       right_old = encoder_count[1];
       encoder_count[0] = 0;
       encoder_count[1] = 0;
-      motor_speed[0] = left_speed_old;
-      motor_speed[1] = right_speed_old;
+      left_speed_old = motor_speed[0];
+      right_speed_old = motor_speed[1];
       
       
       
@@ -238,7 +282,10 @@ void encoder_counter(void){
     
     print("%f\t", global_position[0]);  
     print("%f\t", global_position[1]);  
-    print("%f\n", global_position[2]);      
+    print("%f\n", global_position[2]); 
+    print("\n"); 
+         
+         
   }    
 }  
 
@@ -255,12 +302,48 @@ void global_position_update(){
   
   float dx_local =  (encoder_count[0] + encoder_count[1]) / 2;
   float dy_local =  0;
-  float dth_local = (encoder_count[0] - encoder_count[1]) / L;
+  float dth_local = (encoder_count[1] - encoder_count[0]) / L;
   
-  global_position[0] += dx_local;// * cos(global_position[2] + (dth_local/2));   // x
-  global_position[1] += dx_local;// * sin(global_position[2] + (dth_local/2));   // y
+  global_position[0] += dx_local * cos(global_position[2] + (dth_local/2));   // x
+  global_position[1] += dx_local * sin(global_position[2] + (dth_local/2));   // y
   global_position[2] += dth_local; 
-}                                             // theta
+}   
+
+
+void IR_ObstacleAvoid(int basic_speed){
+  // Performs escape maneuver if IR sensors detect obstacle
+  // Otherwise drives straight at input basic speed
+  
+  int left = s3_simpleObstacle(S3_IS, S3_LEFT);
+  int right = s3_simpleObstacle(S3_IS, S3_RIGHT);
+  int centre = s3_simpleObstacle(S3_IS, S3_CENTER);
+  int detected = s3_simpleObstacle(S3_IS, S3_DETECTED);
+  
+  //print("%d\t", detected);
+  //print("\t");
+  //print("%d\t", left);
+  //print("%d\t", centre);
+  //print("%d\n", right);
+  
+  //if(detected){
+    if(left && !right){         // obstacle to left
+      //s3_motorSet(-10, 70, 0);  // turn right
+      wheel_motors(-10, 70, 0);
+    }
+    else if(right && !left){    // obstacle to right
+      //s3_motorSet(70, -10, 0);  // turn left
+      wheel_motors(70, -10, 0);
+    } 
+    else{                       // obstacle directly in front
+      //s3_simpleSpin(60, 50, 0); // clockwise turn
+      wheel_motors(60, 50, 0);
+    } 
+  //}
+  //else{
+    //s3_motorSet(basic_speed, basic_speed, 0);
+    //wheel_motors(basic_speed, basic_speed, 0);
+  //}                
+}                                          // theta
 
 
   
