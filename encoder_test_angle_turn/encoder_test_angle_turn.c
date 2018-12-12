@@ -10,14 +10,21 @@ float sgn(float v);
 void encoder_counter(void);
 void wheel_motors(int left_speed, int right_speed, int duration);
 
+// constants
+#define pi 3.14159265358979323846
+
 // variables
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
-static float motor_vals[2] = {0, 0}; 
+static float motor_speed[2] = {0, 0}; 
 static float encoder_count[2] = {0, 0}; 
 //static float encoder_current[2] = {0, 0};
-unsigned int stack[40 + 25];    // Stack var for other cog
+unsigned int stack[40 + 25];             // Stack var for other cog
+int L = 145;  // distance between robot wheels (mm)
+float global_position[3] = {0, 0, 0}; // initial position in global frame : x, y, theta
 
-#define pi 3.14159265358979323846
+
+
+
 
 int main() // main function
 {
@@ -196,8 +203,8 @@ float sgn(float v) {
 
 
 void encoder_counter(void){
-  int left_speed_old = motor_vals[0];
-  int right_speed_old = motor_vals[1];
+  int left_speed_old = motor_speed[0];
+  int right_speed_old = motor_speed[1];
 
   float left_old = encoder_vals[0];
   float right_old = encoder_vals[1];
@@ -208,23 +215,30 @@ void encoder_counter(void){
     encoder_count[0] = encoder_vals[0] - left_old;
     encoder_count[1] = encoder_vals[1] - right_old;
     print("%f\t", encoder_count[0]);
-    print("%f\n", encoder_count[1]);
+    print("%f\t", encoder_count[1]);
     
     
     // if the motorinput changes, update the global position variables
-    if(motor_vals[0] != left_speed_old || motor_vals[1] != right_speed_old){
+    if(motor_speed[0] != left_speed_old || motor_speed[1] != right_speed_old){
+      global_position_update();
+      
       left_old = encoder_count[0];
       right_old = encoder_count[1];
       encoder_count[0] = 0;
       encoder_count[1] = 0;
-      motor_vals[0] = left_speed_old;
-      motor_vals[1] = right_speed_old;
+      motor_speed[0] = left_speed_old;
+      motor_speed[1] = right_speed_old;
+      
       
       
       //x_glob = 0;
       //y_glob = 0;
       //th_glob = 0;
-    }      
+    }
+    
+    print("%f\t", global_position[0]);  
+    print("%f\t", global_position[1]);  
+    print("%f\n", global_position[2]);      
   }    
 }  
 
@@ -232,7 +246,21 @@ void encoder_counter(void){
 
 void wheel_motors(int left_speed, int right_speed, int duration){
   s3_motorSet( left_speed, right_speed, duration);
-  motor_vals[0] = left_speed;
-  motor_vals[1] = right_speed;
+  motor_speed[0] = left_speed;
+  motor_speed[1] = right_speed;
     
 }  
+
+void global_position_update(){
+  
+  float dx_local =  (encoder_count[0] + encoder_count[1]) / 2;
+  float dy_local =  0;
+  float dth_local = (encoder_count[0] - encoder_count[1]) / L;
+  
+  global_position[0] += dx_local;// * cos(global_position[2] + (dth_local/2));   // x
+  global_position[1] += dx_local;// * sin(global_position[2] + (dth_local/2));   // y
+  global_position[2] += dth_local; 
+}                                             // theta
+
+
+  
