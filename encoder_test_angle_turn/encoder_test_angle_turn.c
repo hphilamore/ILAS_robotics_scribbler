@@ -7,10 +7,13 @@
 void encoder_update_cog(void); 
 void GoToGoal(float dxI, float dyI, float dtheta, float theta, int basic_speed);
 float sgn(float v);
+void encoder_counter(void);
+void wheel_motors(int left_speed, int right_speed, int duration);
 
 // variables
-
 static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
+static float motor_vals[2] = {0, 0}; 
+static float encoder_count[2] = {0, 0}; 
 unsigned int stack[40 + 25];    // Stack var for other cog
 
 #define pi 3.14159265358979323846
@@ -19,7 +22,12 @@ int main() // main function
 {
 s3_setup();
 
-cogstart(encoder_update_cog, NULL, stack, sizeof(stack));
+
+//cogstart(encoder_update_cog, NULL, stack, sizeof(stack)); 
+cog_run(encoder_update_cog, 65);
+cog_run(encoder_counter, 65);
+//cogstart(encoder_counter, NULL, stack, sizeof(stack));
+
 
 if (s3_resetButtonCount() == 1) {
 	GoToGoal(200, -100, pi/2, pi/4, 50); 
@@ -64,7 +72,8 @@ int orientation_flag = 0;
     */
 
 
-    s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+    //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+    wheel_motors(-sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
 
     
      
@@ -103,7 +112,8 @@ int orientation_flag = 0;
       */
          
          
-      s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+      //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+      wheel_motors(-sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
       
       
       if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenoR)){ // goal reached
@@ -190,3 +200,25 @@ float sgn(float v) {
   else           { return 0; }
   return 0;
 }
+
+
+void encoder_counter(void){
+  float left_old = encoder_vals[0];
+  float right_old = encoder_vals[1];
+  float left_new; 
+  float right_new; 
+  
+  while(1){
+    left_new += encoder_count[0] - left_old;
+    right_new += encoder_count[1] - right_old;
+  }    
+}  
+
+
+
+void wheel_motors(int left_speed, int right_speed, int duration){
+  s3_motorSet( left_speed, right_speed, 0);
+  motor_vals[0] = left_speed;
+  motor_vals[1] = right_speed;
+    
+}  
