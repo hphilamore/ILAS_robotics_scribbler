@@ -1,3 +1,5 @@
+static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};   // an array to hold encoder data
+
 void encoder_update_cog(void) { 
     while(1){  
     // Value : a 32 bit integer containing registers describig the behavious of drive and idler wheel encoders

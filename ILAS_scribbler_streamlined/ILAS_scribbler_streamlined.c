@@ -364,8 +364,6 @@ void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
   // distance between robot wheels (mm)
   int L = 145;
   
-  // flag to indicate presence of obstacle
-  int flag = 0;
   
   // convert goal global --> local
   float dxR = dxI * cos(theta) + dyI * sin(theta);

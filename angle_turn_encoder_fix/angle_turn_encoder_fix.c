@@ -1,3 +1,4 @@
+
 #include "simpletools.h" // Include simpletools
 #include "s3.h" 
 #include "scribbler.h"
@@ -42,26 +43,13 @@ while(1){
 //if(s3_simpleObstacle(S3_IS, S3_DETECTED)){
    
     // s3_setLED(S3_CENTER, S3_COLOR_FF0000);
-    wheel_motors(-100, -100, 0);
+    //wheel_motors(100, 100, 0);
     
     
-    int32_t value = scribbler_motion();
-    
-    //int32_t e0 = (value >> 24);           
-    //encoder_vals[7] = e0 * 0.25;  //new 1 
-    print("%d \t", (value >> 24));  //new 1           
-    print("%d \n", ((value >> 16) & 0xff)); 
-  
-    
-     //IR_ObstacleAvoid(50);
-   // }  
-    
-//else{
-    //print("%f \t %f \n", encoder_vals[7], encoder_vals[8]);
-    //wheel_motors(100, 100, 0); 
-    
-    //wheel_motors(100, -100, 5000);
-   //}  
+    //int32_t value = scribbler_motion();
+    IR_ObstacleAvoid(70);
+    //print("%f\t", encoder_vals[0]);
+    //print("%f\n", encoder_vals[1]);
  }       
 
 
@@ -200,9 +188,11 @@ void encoder_update_cog(void) {
     //encoder_vals[7] = e0 * 0.25;  //new 1 
     encoder_vals[7] = (value >> 24) * 0.25;  //new 1           
     
-    //int32_t e1 = (value >> 16) & 0xff;           
-    //encoder_vals[8] = e1 * 0.25;  //new 2 
-    encoder_vals[8] = ((value >> 16) & 0xff) * 0.25;  //new 2  
+    int32_t e1 = (value >> 16) & 0xff; 
+    if(e1 > 100){e1 -= 256;}           
+    encoder_vals[8] = e1 * 0.25;  //new 2 
+    //encoder_vals[8] = ((value >> 16) & 0xff) * 0.25;  //new 2
+       
       
       //if (new > old){
       //if (encoder_vals[7] >= encoder_vals[5]){
@@ -275,14 +265,15 @@ void encoder_counter(void){
     */
     
     
+    
     // if the motor input changes, update the global position variables
     if(motor_speed[0] != motor_speed[2] || motor_speed[1] != motor_speed[3]){
       global_position_update();
       motor_speed[2] = motor_speed[0];
       motor_speed[3] = motor_speed[1];
       
-      left_old = encoder_count[0];
-      right_old = encoder_count[1];
+      left_old = encoder_vals[0];
+      right_old = encoder_vals[1];
       encoder_count[0] = 0;
       encoder_count[1] = 0;
       
@@ -291,12 +282,22 @@ void encoder_counter(void){
       //th_glob = 0;
     }
     
-    /*
+    print("%f\t", motor_speed[0]);
+    print("%f\n", motor_speed[1]);
+    
+    print("%f\t", left_old);
+    print("%f\t", right_old);
+    print("\n");
+    
+    print("%f\t", encoder_count[0]);
+    print("%f\t", encoder_count[1]);
+    print("\n");
+    
     print("%f\t", global_position[0]);  
     print("%f\t", global_position[1]);  
     print("%f\n", global_position[2]); 
     print("\n"); 
-    */
+    
          
          
   }    
@@ -317,12 +318,12 @@ void global_position_update(){
   float dy_local =  0;
   float dth_local = (encoder_count[1] - encoder_count[0]) / L;
   
-  global_position[0] = dx_local;  //+= dx_local * cos(global_position[2] + (dth_local/2));   // x
-  global_position[1] = dy_local;  //+= dx_local * sin(global_position[2] + (dth_local/2));   // y
-  global_position[2] = dth_local; //+= dth_local; 
+  global_position[0] += dx_local;  //+= dx_local * cos(global_position[2] + (dth_local/2));   // x
+  global_position[1] += dy_local;  //+= dx_local * sin(global_position[2] + (dth_local/2));   // y
+  global_position[2] += dth_local; //+= dth_local; 
 }   
 
-
+/*
 void IR_ObstacleAvoid(int basic_speed){
   // Performs escape maneuver if IR sensors detect obstacle
   // Otherwise drives straight at input basic speed
@@ -363,6 +364,52 @@ void IR_ObstacleAvoid(int basic_speed){
     wheel_motors(-70, -70, 0);
   }                
 }                                          // theta
-
+*/
 
   
+  
+void IR_ObstacleAvoid(int basic_speed){
+  // Performs escape maneuver if IR sensors detect obstacle
+  // Otherwise drives straight at input basic speed
+  
+  int left = s3_simpleObstacle(S3_IS, S3_LEFT);
+  int right = s3_simpleObstacle(S3_IS, S3_RIGHT);
+  int centre = s3_simpleObstacle(S3_IS, S3_CENTER);
+  int detected = s3_simpleObstacle(S3_IS, S3_DETECTED);
+  
+  //print("%d\t", detected);
+  //print("\t");
+  //print("%d\t", left);
+  //print("%d\t", centre);
+  //print("%d\n", right);
+  
+  //if(detected){
+    if(left && !right){         // obstacle to left
+      //s3_motorSet(-10, 70, 0);  // turn right
+      //print("%d \n", 1); 
+      wheel_motors(-70, -70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_FF0000);       s3_setLED(S3_CENTER, S3_COLOR_FF0000);       s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    }
+    
+    
+    else if(right && !left){    // obstacle to right
+      //s3_motorSet(70, -10, 0);  // turn left
+      //print("%d \n", 2); 
+      wheel_motors(70, 70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_FF0000);       s3_setLED(S3_RIGHT, S3_COLOR_000000);
+    }
+    /*
+    else{                       // obstacle directly in front
+      //s3_simpleSpin(60, 50, 0); // clockwise turn
+      //print("%d \n", 3); 
+      wheel_motors(70, 70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_000000);       s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    } 
+  }
+  */
+  else{
+    //s3_motorSet(basic_speed, basic_speed, 0);
+    wheel_motors(0, 0, 0);
+          s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_000000);       s3_setLED(S3_RIGHT, S3_COLOR_000000);
+  }                
+} 
