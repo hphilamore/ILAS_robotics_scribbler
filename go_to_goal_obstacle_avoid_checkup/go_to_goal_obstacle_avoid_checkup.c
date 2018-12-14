@@ -1,0 +1,647 @@
+
+// this code works sometimes 
+// the goal is acccurately reset when the robot obstacle avoid
+
+#include "simpletools.h" // Include simpletools
+#include "s3.h" 
+#include "scribbler.h"
+#include "math.h"
+
+// functions
+void encoder_update_cog(void); 
+void GoToGoal(float dxI, float dyI, float theta, int basic_speed);
+float sgn(float v);
+void encoder_counter(void);
+void wheel_motors(int left_speed, int right_speed, int duration);
+void IR_ObstacleAvoid(int basic_speed);
+
+// constants
+#define pi 3.14159265358979323846
+
+// variables
+static float encoder_vals[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
+static float motor_speed[4] = {0, 0, 0, 0}; 
+static float encoder_count[2] = {0, 0}; 
+//unsigned int stack[40 + 25];            // Stack var for other cog
+int L = 145;                            // distance between robot wheels (mm)
+static float global_position[3] = {0, 0, 0};   // initial position in global frame : x, y, theta
+
+static float goal[3] = {-100, -100, 0};
+static float path[3] = {0, 0, 0};
+
+
+
+
+
+int main() // main function
+{
+s3_setup();
+//int time_old = CNT/st_usTicks;
+
+
+//cogstart(encoder_update_cog, NULL, stack, sizeof(stack)); 
+cog_run(encoder_update_cog, 40);
+cog_run(encoder_counter, 40);
+//cogstart(encoder_counter, NULL, stack, sizeof(stack));
+
+
+
+//while(1){
+    //IR_ObstacleAvoid(70);
+    
+    
+    
+ //}       
+
+
+
+  if (s3_resetButtonCount() == 1) {
+    //GoToGoal(200, -100,     pi/4, 50);
+    GoToGoal(200, 200, 0, 50);
+    
+    
+
+    
+    /*
+    // convert goal global --> local
+    float dxR = goal[0] * cos(goal[2]) + goal[1] * sin(goal[2]);
+    float dyR = goal[0] * -sin(goal[2])+ goal[1] * cos(goal[2]); 
+    
+    // plan path
+    float aR = atan2(dyR, dxR);                         // angle
+    float lenR = aR * L / 2;                            // convert angle to arc of wheel travel
+    
+    float dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);  // distance
+    
+    //float lenR = 113.88; 
+    //float aR = pi/4;
+    //float dR = 223.61;
+    
+    int turn_flag = 0;
+    int straight_flag = 0;
+    
+    int basic_speed = 70;
+    
+    float left_count_start = encoder_vals[0];
+    
+      
+      while(1){
+        
+        // turn to angle
+        if(turn_flag == 0){ 
+        
+        s3_setLED(S3_LEFT, S3_COLOR_00FF00);       s3_setLED(S3_CENTER, S3_COLOR_00FF00);       s3_setLED(S3_RIGHT, S3_COLOR_00FF00);  
+    
+        //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+        wheel_motors(-sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);  
+        
+        if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenR)){ // angle reached
+          turn_flag = 1;                        // put the flag up
+          left_count_start = encoder_vals[0];}  // reset the count
+        } // if 
+        
+        
+        
+        // drive to goal
+        else if(straight_flag == 0){ 
+        
+        s3_setLED(S3_LEFT, S3_COLOR_00FF00);       s3_setLED(S3_CENTER, S3_COLOR_00FF00);       s3_setLED(S3_RIGHT, S3_COLOR_00FF00);   
+          
+          //s3_motorSet( basic_speed, basic_speed, 0);
+          wheel_motors(basic_speed, basic_speed, 0);
+          
+          
+          if(fabs(encoder_vals[0] - left_count_start) >= fabs(dR)){ // goal reached
+            // put the flag up
+            straight_flag = 1;
+            left_count_start = encoder_vals[0];
+            //print("reached!");
+            //s3_simpleStop(); 
+          } 
+        } // else if
+        
+        
+        else if(straight_flag == 1){
+          s3_simpleStop();
+          break;} 
+      
+    }  // while 
+    */
+  
+  } // reset button
+  
+    
+    
+} // main
+
+
+
+
+
+
+
+
+/*
+void GoToGoal(float dxI, float dyI, float dtheta, float theta, int basic_speed){
+
+int turn_flag = 0;
+int straight_flag = 0;
+int orientation_flag = 0;
+
+  // distance between robot wheels (mm)
+  int L = 145;
+  
+  // convert goal global --> local
+  float dxR = dxI * cos(theta) + dyI * sin(theta);
+  float dyR = dxI * -sin(theta)+ dyI * cos(theta); 
+  
+  // plan path
+  float aR = atan2(dyR, dxR);                         // angle
+  float lenR = aR * L / 2;                            // convert angle to arc of wheel travel
+  
+  float dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);  // distance
+  
+  float oR = theta - aR;                               // angle of orientation 
+  float lenoR = oR * L / 2;                            // convert angle to arc of wheel travel
+  
+  
+  float left_count_start = encoder_vals[0];
+   
+  while(1){
+    if(turn_flag == 0){   // turn to angle
+    
+
+
+
+    //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+    wheel_motors(-sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+
+    
+     
+     
+     
+      
+    
+    if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenR)){ // angle reached
+      turn_flag = 1;                        // put the flag up
+      left_count_start = encoder_vals[0];}  // reset the count
+    } // if 
+    
+    
+    else if(straight_flag == 0){    // drive to goal
+      
+      s3_motorSet( basic_speed, basic_speed, 0);
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(dR)){ // goal reached
+        // put the flag up
+        straight_flag = 1;
+        left_count_start = encoder_vals[0];
+        //print("reached!");
+        //s3_simpleStop(); 
+      } 
+    } // else if
+    
+    
+    
+    else if(orientation_flag == 0){    // drive to goal
+    
+
+         
+         
+      //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+      wheel_motors(-sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+      
+      
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenoR)){ // goal reached
+        // put the flag up
+        orientation_flag = 1;
+        //print("reached!");
+        //s3_simpleStop(); 
+      } 
+    } // else if
+    
+    
+    //else if(straight_flag == 1){break;} 
+    else if(orientation_flag == 1){
+      s3_simpleStop();
+      break;} 
+  
+  }// while 
+} 
+*/
+
+
+
+void GoToGoal(float dxI, float dyI, float theta, int basic_speed){
+
+int turn_flag = 0;
+int straight_flag = 0;
+//int orientation_flag = 0;
+int obstacle_avoid_flag = 0;
+  
+  // convert goal global --> local
+  //float dxR = dxI * cos(theta) + dyI * sin(theta);
+  //float dyR = dxI * -sin(theta)+ dyI * cos(theta); 
+  float dxR = goal[0] * cos(goal[2]) + goal[1] * sin(goal[2]);
+  float dyR = goal[0] * -sin(goal[2])+ goal[1] * cos(goal[2]); 
+  
+  // plan path
+  //float aR = atan2(dyR, dxR);                         // angle
+  //float lenR = aR * L / 2;                            // convert angle to arc of wheel travel
+  //float dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);  // distance
+  
+  path[0] = atan2(dyR, dxR); 
+  path[1] = path[0] * L / 2; 
+  path[2] = powf((powf(dxR,2) + powf(dyR,2)), 0.5);
+  
+  //float oR = theta - aR;                               // angle of orientation 
+  //float lenoR = oR * L / 2;                            // convert angle to arc of wheel travel
+  
+  
+  float left_count_start = encoder_vals[0];
+   
+  while(1){
+    
+    //print("%f\n", aR);
+    //print("%f\n", aR);
+    
+    // obstacle
+    if(s3_simpleObstacle(S3_IS, S3_DETECTED)){
+      obstacle_avoid_flag = 1;
+      IR_ObstacleAvoid(70);     
+    }   
+    
+    
+    // no obstacle but obstacle avoid flag up : recompute path to goal
+    else if(obstacle_avoid_flag == 1){
+      s3_setLED(S3_LEFT, S3_COLOR_FF7F00);       s3_setLED(S3_CENTER, S3_COLOR_FF7F00);       s3_setLED(S3_RIGHT, S3_COLOR_FF7F00);  
+      wheel_motors(0, 0, 0);  
+      
+      obstacle_avoid_flag = 0;
+      straight_flag == 0;
+      turn_flag == 0;
+      
+      //pause(500);
+      
+      // recompute distance to obstacle
+      //dxI = dxI - global_position[0]; 
+      //dyI = dyI - global_position[1];
+      //theta = global_position[2];
+      
+      // convert goal global --> local
+      dxR = goal[0] * cos(goal[2]) + goal[1] * sin(goal[2]);
+      dyR = goal[0] * -sin(goal[2])+ goal[1] * cos(goal[2]); 
+   
+      
+      // re plan path
+      //aR = atan2(dyR, dxR);                         // angle
+      //lenR = aR * L / 2;                            // convert angle to arc of wheel travel
+      //dR = powf((powf(dxR,2) + powf(dyR,2)), 0.5);  // distance
+      
+      path[0]=atan2(dyR, dxR); 
+      path[1]=path[0]  * L / 2; 
+      path[2]=powf((powf(dxR,2) + powf(dyR,2)), 0.5);
+      
+      //oR = theta - aR;                               // angle of orientation 
+      //lenoR = oR * L / 2;                            // convert angle to arc of wheel travel
+      
+      left_count_start = encoder_vals[0];   
+    } 
+       
+    
+    
+    // turn to angle
+    else if(turn_flag == 0){ 
+    
+    //s3_setLED(S3_LEFT, S3_COLOR_00FF00);       s3_setLED(S3_CENTER, S3_COLOR_00FF00);       s3_setLED(S3_RIGHT, S3_COLOR_00FF00);  
+
+    //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+    wheel_motors(-sgn(path[0])*basic_speed, sgn(path[0])*basic_speed, 0);  
+    
+    if(fabs(encoder_vals[0] - left_count_start) >= fabs(path[1])){ // angle reached
+      turn_flag = 1;                        // put the flag up
+      left_count_start = encoder_vals[0];}  // reset the count
+    } // if 
+    
+    
+    
+    // drive to goal
+    else if(straight_flag == 0){ 
+    
+    //s3_setLED(S3_LEFT, S3_COLOR_00FF00);       s3_setLED(S3_CENTER, S3_COLOR_00FF00);       s3_setLED(S3_RIGHT, S3_COLOR_00FF00);   
+      
+      //s3_motorSet( basic_speed, basic_speed, 0);
+      wheel_motors(basic_speed, basic_speed, 0);
+      
+      
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(path[2])){ // goal reached
+        // put the flag up
+        straight_flag = 1;
+        left_count_start = encoder_vals[0];
+        //print("reached!");
+        //s3_simpleStop(); 
+      } 
+    } // else if
+    
+    
+    /*
+    // re-orientate
+    else if(orientation_flag == 0){    // drive to goal
+         
+      //s3_motorSet( -sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+      wheel_motors(-sgn(aR)*basic_speed, sgn(aR)*basic_speed, 0);
+      
+      
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(lenoR)){ // goal reached
+        // put the flag up
+        orientation_flag = 1;
+        //print("reached!");
+        //s3_simpleStop(); 
+      } 
+    } // else if
+    */
+    
+    
+    
+    else if(straight_flag == 1){
+    //else if(orientation_flag == 1){
+      s3_simpleStop();
+      break;} 
+      
+    
+  
+  }// while 
+} 
+
+
+
+
+void encoder_update_cog(void) { 
+    while(1){  
+    // Value : a 32 bit integer containing registers describig the behavious of drive and idler wheel encoders
+    // Updates an array of 9 values
+    // 0 Left wheel distance count (mm)
+    // 1 Right wheel distance count (mm)
+    // 2 Time in 1/10 second since the last idler encoder edge
+    // 3 Idler wheel velocity
+    // 4 Non-zero if one or more motors are turning.  
+    // 5-8 Variables used in encoder calcs     
+
+    
+    int32_t value = scribbler_motion();
+    
+    //int32_t e0 = (value >> 24);           
+    //encoder_vals[7] = e0 * 0.25;  //new 1 
+    encoder_vals[7] = (value >> 24) * 0.25;  //new 1           
+    
+    int32_t e1 = (value >> 16) & 0xff; 
+    if(e1 > 100){e1 -= 256;}           
+    encoder_vals[8] = e1 * 0.25;  //new 2 
+    //encoder_vals[8] = ((value >> 16) & 0xff) * 0.25;  //new 2
+       
+      
+      //if (new > old){
+      //if (encoder_vals[7] >= encoder_vals[5]){
+      if (abs(encoder_vals[7]) >= abs(encoder_vals[5])){
+        encoder_vals[0] += encoder_vals[7] - encoder_vals[5];
+      }
+      else {  
+        encoder_vals[0] += encoder_vals[7]; 
+      }    
+      
+      //if (encoder_vals[8] >= encoder_vals[6]){
+      if (abs(encoder_vals[8]) >= abs(encoder_vals[6])){
+        encoder_vals[1] += encoder_vals[8] - encoder_vals[6];
+      }
+      else {  
+        encoder_vals[1] += encoder_vals[8]; 
+      }             
+        
+    //old = new;
+    encoder_vals[5] = encoder_vals[7];  // old1 = new1
+    encoder_vals[6] = encoder_vals[8];  // old2 = new2
+    
+    //int32_t e2 = (value >> 8)  & 0xff;           
+    encoder_vals[2] = (value >> 8)  & 0xff;
+    
+    //int32_t e3 = value & 0xfc;           
+    encoder_vals[3] = value & 0xfc;
+    
+    //int32_t e4 = value & 0x3;           
+    encoder_vals[4] = value & 0x3; 
+    
+    //print("%d  \t", (value >> 24)); 
+    //print("%f  \n", encoder_vals[0]);  
+  }                 
+
+}
+
+
+float sgn(float v) {
+  if      (v < 0){ return -1; }
+  else if (v > 0){ return 1; }
+  else           { return 0; }
+  return 0;
+}
+
+
+void encoder_counter(void){
+  //int motor_speed[2] = motor_speed[0];
+  //int motor_speed[3] = motor_speed[1];
+
+  float left_old = encoder_vals[0];
+  float right_old = encoder_vals[1];
+  //float left_new; 
+  //float right_new; 
+  
+  while(1){     
+    encoder_count[0] = encoder_vals[0] - left_old;
+    encoder_count[1] = encoder_vals[1] - right_old;
+    
+    
+    //print("%f\t", motor_speed[2]);
+    //print("%f\t", motor_speed[3]);
+    /*
+    print("%f\t", motor_speed[0]);
+    print("%f\n", motor_speed[1]);
+    
+    print("%f\t", encoder_count[0]);
+    print("%f\t", encoder_count[1]);
+    print("\n");
+    */
+    
+    
+    
+    // if the motor input changes, update the global position variables
+    if(motor_speed[0] != motor_speed[2] || motor_speed[1] != motor_speed[3]){
+      global_position_update();
+      motor_speed[2] = motor_speed[0];
+      motor_speed[3] = motor_speed[1];
+      
+      left_old = encoder_vals[0];
+      right_old = encoder_vals[1];
+      encoder_count[0] = 0;
+      encoder_count[1] = 0;
+      
+      //x_glob = 0;
+      //y_glob = 0;
+      //th_glob = 0;
+    }
+    
+    
+    //print("%f\t", motor_speed[0]);
+    //print("%f\n", motor_speed[1]);
+    
+    //print("%f\t", left_old);
+    //print("%f\n", right_old);
+ 
+    
+    //print("%f\t", encoder_count[0]);
+    //print("%f\n", encoder_count[1]);
+
+    
+    //print("%f\t", global_position[0]);  
+    //print("%f\t", global_position[1]);  
+    //print("%f\n", global_position[2]); 
+    
+    
+    //print("%f\t", goal[0] - global_position[0]); 
+    //print("%f\t", goal[1] - global_position[1]); 
+    //print("%f\n", goal[2] - global_position[2]); 
+    
+    
+    //print("\n");
+    
+    
+         
+         
+  }    
+}  
+
+
+
+void wheel_motors(int left_speed, int right_speed, int duration){
+  s3_motorSet( left_speed, right_speed, duration);
+  motor_speed[0] = left_speed;
+  motor_speed[1] = right_speed;
+    
+}  
+
+void global_position_update(){
+  
+  float dx_local =  (encoder_count[0] + encoder_count[1]) / 2;
+  float dy_local =  0;
+  float dth_local = (encoder_count[1] - encoder_count[0]) / L;
+  
+  //global_position[0] += dx_local;  //+= dx_local * cos(global_position[2] + (dth_local/2));   // x
+  //global_position[1] += dy_local;  //+= dx_local * sin(global_position[2] + (dth_local/2));   // y
+  //global_position[2] += dth_local; //+= dth_local; 
+  global_position[0] += dx_local * cos(global_position[2] + (dth_local/2));   // x
+  global_position[1] += dx_local * sin(global_position[2] + (dth_local/2));   // y
+  global_position[2] += dth_local;
+  
+  goal[0] -= global_position[0];
+  goal[1] -= global_position[1];
+  goal[2] = global_position[2];
+}   
+
+/*
+void IR_ObstacleAvoid(int basic_speed){
+  // Performs escape maneuver if IR sensors detect obstacle
+  // Otherwise drives straight at input basic speed
+  
+  int left = s3_simpleObstacle(S3_IS, S3_LEFT);
+  int right = s3_simpleObstacle(S3_IS, S3_RIGHT);
+  int centre = s3_simpleObstacle(S3_IS, S3_CENTER);
+  int detected = s3_simpleObstacle(S3_IS, S3_DETECTED);
+  
+  //print("%d\t", detected);
+  //print("\t");
+  //print("%d\t", left);
+  //print("%d\t", centre);
+  //print("%d\n", right);
+  
+  if(detected){
+    if(left && !right){         // obstacle to left
+      //s3_motorSet(-10, 70, 0);  // turn right
+      //print("%d \n", 1); 
+      wheel_motors(70, -70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_FF0000);       s3_setLED(S3_CENTER, S3_COLOR_000000);       s3_setLED(S3_RIGHT, S3_COLOR_000000);
+    }
+    else if(right && !left){    // obstacle to right
+      //s3_motorSet(70, -10, 0);  // turn left
+      //print("%d \n", 2); 
+      wheel_motors(-70, 70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_FF0000);       s3_setLED(S3_RIGHT, S3_COLOR_000000);
+    }
+    else{                       // obstacle directly in front
+      //s3_simpleSpin(60, 50, 0); // clockwise turn
+      //print("%d \n", 3); 
+      wheel_motors(70, 70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_000000);       s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    } 
+  }
+  else{
+    //s3_motorSet(basic_speed, basic_speed, 0);
+    wheel_motors(-70, -70, 0);
+  }                
+}                                          // theta
+*/
+
+  
+/*  
+void IR_ObstacleAvoid(int basic_speed){
+  // Performs escape maneuver if IR sensors detect obstacle
+  // Otherwise drives straight at input basic speed
+  
+  //int left = s3_simpleObstacle(S3_IS, S3_LEFT);
+  //int right = s3_simpleObstacle(S3_IS, S3_RIGHT);
+  //int centre = s3_simpleObstacle(S3_IS, S3_CENTER);
+  //int detected = s3_simpleObstacle(S3_IS, S3_DETECTED);
+  
+  //print("%d\t", detected);
+  //print("\t");
+  //print("%d\t", left);
+  //print("%d\t", centre);
+  //print("%d\n", right);
+  
+  //if(detected){
+    if(s3_simpleObstacle(S3_IS, S3_LEFT) && !s3_simpleObstacle(S3_IS, S3_RIGHT)){         // obstacle to left
+      //s3_motorSet(-10, 70, 0);  // turn right
+      //print("%d \n", 1); 
+      //wheel_motors(-70, -70, 0);
+      wheel_motors(-30, -70, 0);
+      //s3_setLED(S3_LEFT, S3_COLOR_FF0000);       s3_setLED(S3_CENTER, S3_COLOR_FF0000);       s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    }
+    
+    
+    else if(s3_simpleObstacle(S3_IS, S3_RIGHT) && !s3_simpleObstacle(S3_IS, S3_LEFT)){    // obstacle to right
+      //s3_motorSet(70, -10, 0);  // turn left
+      //print("%d \n", 2); 
+      //wheel_motors(70, 70, 0);
+      wheel_motors(70, 30, 0);
+      //s3_setLED(S3_LEFT, S3_COLOR_FF7F00);       s3_setLED(S3_CENTER, S3_COLOR_FF7F00);       s3_setLED(S3_RIGHT, S3_COLOR_FF7F00);
+    }
+    
+    else{                       // obstacle directly in front
+      //s3_simpleSpin(60, 50, 0); // clockwise turn
+      //print("%d \n", 3); 
+      wheel_motors(70, 70, 0);
+      s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_000000);       s3_setLED(S3_RIGHT, S3_COLOR_FF0000);
+    } 
+  }
+  
+  else{
+    //s3_motorSet(basic_speed, basic_speed, 0);
+    wheel_motors(0, 0, 0);
+    //s3_setLED(S3_LEFT, S3_COLOR_000000);       s3_setLED(S3_CENTER, S3_COLOR_000000);       s3_setLED(S3_RIGHT, S3_COLOR_000000);
+  } 
+  
+  
+  
+                 
+} 
+*/
+
+void IR_ObstacleAvoid(int basic_speed){
+  wheel_motors(70, -70, 0);
+}  

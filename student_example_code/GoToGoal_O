@@ -1,0 +1,61 @@
+void GoToGoal_O(float dxI, float dyI, float th_i, float th_f, int basic_speed){
+  
+  // Drives the robot by turning on the spot then driving in a straight line.  
+  // dxI : x distance to goal, global frame
+  // dyI : y distance to goal, global frame
+  // th_f : final angle of orientation, global frame
+  // th_i : initial angle of orientation, global frame 
+
+  int turn_flag = 0;
+  int straight_flag = 0;
+  int orientation_flag = 0;
+  
+  // convert goal global --> local
+  float dxR = dxI * cos(th_i) + dyI * sin(th_i);
+  float dyR = dxI * -sin(th_i)+ dyI * cos(th_i); 
+  
+  // plan path
+  float a1 = atan2(dyR, dxR);                           // angle
+  float len_a1 = a1 * L / 2;                             // convert angle to arc of wheel travel
+  
+  float d = powf((powf(dxR,2) + powf(dyR,2)), 0.5);    // distance
+  
+  float a2 = th_f - th_i - a1;                                // angle of orientation 
+  float len_a2 = a2 * L / 2;                             // convert angle to arc of wheel travel
+  
+  
+  float left_count_start = encoder_vals[0];
+   
+  while(1){
+    if(turn_flag == 0){   // turn to angle
+    s3_motorSet(-sgn(a1)*basic_speed, sgn(a1)*basic_speed, 0);
+    if(fabs(encoder_vals[0] - left_count_start) >= fabs(len_a1)){ // angle reached
+      turn_flag = 1;                                              // put the flag up
+      left_count_start = encoder_vals[0];}                        // reset the count
+    } // if 
+    
+    
+    else if(straight_flag == 0){  // drive to goal                             
+      s3_motorSet( basic_speed, basic_speed, 0);               
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(d)){ // goal reached
+        straight_flag = 1;                                     // put the flag up
+        left_count_start = encoder_vals[0];
+      } 
+    } // else if
+    
+    
+    
+    else if(orientation_flag == 0){  // turn to orientation                               
+      s3_motorSet(-sgn(a2)*basic_speed, sgn(a2)*basic_speed, 0); 
+      if(fabs(encoder_vals[0] - left_count_start) >= fabs(len_a2)){ // orientation reached
+        orientation_flag = 1;                                       // put the flag up
+      } 
+    } // else if
+    
+    
+    else if(orientation_flag == 1){
+      s3_simpleStop();
+      break;} 
+  
+  }// while 
+} 
