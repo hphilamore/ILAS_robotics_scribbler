@@ -17,7 +17,8 @@ void encoder_update(void) {
     int32_t e0 = (value >> 24);           
     encoder_vals[7] = e0 * 0.25;  //new 1           
     
-    int32_t e1 = (value >> 16) & 0xff;           
+    int32_t e1 = (value >> 16) & 0xff;  
+    if(e1 > 100){e1 -= 256;}          
     encoder_vals[8] = e1 * 0.25;  //new 2  
       
       //if (new > old){

@@ -699,11 +699,20 @@ void AnalogLightFollow(void){
     }
     s3_motorSet(0, 0, 0);                  // stop moving         
     
-    int leftave_white = left/count;        // average left IR sensor
-    int rightave_white = right/count;      // average right IR sensor
+    int leftave = left/count;        // average left IR sensor
+    int rightave = right/count;      // average right IR sensor
     
-    s3_memoryWrite(1, leftave_white);      // store in non-volatile memory 
-    s3_memoryWrite(2, rightave_white);
+    
+    if(colour == "w"){
+      s3_memoryWrite(1, leftave);      // store in non-volatile memory 
+      s3_memoryWrite(2, rightave);                           
+    }   
+    
+    else if(colour == "b"){
+      s3_memoryWrite(3, leftave);      // store in non-volatile memory 
+      s3_memoryWrite(4, rightave);                           
+    }
+    
     
     
   }  
@@ -783,8 +792,8 @@ void LineFollow(char controller){
       int leftave_black = s3_memoryRead(3);
       int rightave_black = s3_memoryRead(4);
       
-      int mid_left = (leftave_white - leftave_black) / 2;        // midpoint between black and white
-      int mid_right = (rightave_white - rightave_black) / 2;
+      int mid_left = (leftave_white + leftave_black) / 2;        // midpoint between black and white
+      int mid_right = (rightave_white + rightave_black) / 2;
       
       int v_basic = 30;                                          // basic speed
       
@@ -833,8 +842,8 @@ void LineFollowBinary(void){
       int leftave_black = s3_memoryRead(3);
       int rightave_black = s3_memoryRead(4);
       
-      int mid_left = (leftave_white - leftave_black) / 2;        // midpoint between black and white
-      int mid_right = (rightave_white - rightave_black) / 2;
+      int mid_left = (leftave_white + leftave_black) / 2;        // midpoint between black and white
+      int mid_right = (rightave_white + rightave_black) / 2;
       
       int v_basic = 30;                                          // basic speed
       
@@ -865,8 +874,8 @@ void LineFollowProp(void){
       int leftave_black = s3_memoryRead(3);
       int rightave_black = s3_memoryRead(4);
       
-      int mid_left = (leftave_white - leftave_black) / 2;        // midpoint between black and white
-      int mid_right = (rightave_white - rightave_black) / 2;
+      int mid_left = (leftave_white + leftave_black) / 2;        // midpoint between black and white
+      int mid_right = (rightave_white + rightave_black) / 2;
       
       int v_basic = 30;                                          // basic speed
 
